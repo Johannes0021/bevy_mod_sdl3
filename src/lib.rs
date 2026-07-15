@@ -5,8 +5,10 @@ pub use windows::*;
 pub use sdl3;
 
 use bevy_app::{App, Last, /*OnAppExitSystems,*/ Plugin};
-use bevy_ecs::schedule::IntoScheduleConfigs;
-use bevy_window::ExitSystems;
+use bevy_ecs::{
+    change_detection::NonSendMut, lifecycle::Add, observer::On, schedule::IntoScheduleConfigs,
+};
+use bevy_window::{ExitSystems, Window};
 
 mod context;
 mod converters;
@@ -30,6 +32,11 @@ impl Plugin for Sdl3Plugin {
                                                         //check_keyboard_focus_lost,
                 )
                     .chain(),
+            )
+            .add_observer(
+                |_window: On<Add, Window>, mut sdl_context: NonSendMut<SdlContext>| {
+                    sdl_context.needs_to_spawn_sdl_windows = true;
+                },
             );
     }
 }
