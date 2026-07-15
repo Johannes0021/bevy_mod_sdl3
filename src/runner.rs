@@ -2,7 +2,6 @@ use std::mem;
 
 use bevy_app::{App, AppExit, PluginsState};
 use bevy_ecs::{system::SystemState, world::FromWorld};
-use bevy_log::info;
 
 use sdl3::event::Event as SdlEvent;
 
@@ -16,13 +15,6 @@ pub fn app_loop(mut app: App) -> AppExit {
         app.finish();
         app.cleanup();
     }
-
-    let mut event_pump = app
-        .world_mut()
-        .non_send_mut::<SdlContext>()
-        .sdl
-        .event_pump()
-        .unwrap();
 
     'outer: loop {
         if app.plugins_state() != PluginsState::Cleaned {
@@ -51,9 +43,13 @@ pub fn app_loop(mut app: App) -> AppExit {
             }
         }
 
-        for event in event_pump.poll_iter() {
-            if let SdlEvent::Quit { .. } = event {
-                break 'outer;
+        {
+            let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+
+            for event in sdl_context.event_pump.poll_iter() {
+                if let SdlEvent::Quit { .. } = event {
+                    break 'outer;
+                }
             }
         }
 

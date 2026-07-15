@@ -18,7 +18,7 @@ use bevy_window::{
     WindowClosing, WindowCreated, WindowWrapper,
 };
 
-use sdl3::{Sdl, VideoSubsystem as SdlVideoSubsystem};
+use sdl3::{EventPump as SdlEventPump, Sdl, VideoSubsystem as SdlVideoSubsystem};
 
 use crate::{
     converters::theme_from_sdl,
@@ -34,39 +34,25 @@ pub struct SdlContext {
     pub sdl: Sdl,
     pub video: SdlVideoSubsystem,
     windows: SdlWindows,
+    pub(crate) event_pump: SdlEventPump,
     pub(crate) needs_to_spawn_sdl_windows: bool,
 }
 
 impl SdlContext {
     pub fn init() -> Self {
         let sdl = sdl3::init().unwrap();
+        let event_pump = sdl.event_pump().unwrap();
         let video = sdl.video().unwrap();
 
         Self {
             sdl,
             video,
             windows: SdlWindows::new(),
+            event_pump,
             needs_to_spawn_sdl_windows: true,
         }
     }
-    /*
-        fn get_window_entity_and_scale(
-            sdl_id: u32,
-        ) -> impl FnOnce(&Option<SdlContext>) -> Option<(Entity, f32)> {
-            move |cx: &Option<SdlContext>| {
-                cx.as_ref().and_then(|cx| {
-                    let entity = cx
-                        .windows
-                        .winit_to_entity
-                        .get(&sdl_id.into())
-                        .copied()?;
-                    let window = cx.windows.get(entity)?;
 
-                    Some((entity, window.display_scale()))
-                })
-            }
-        }
-    */
     fn create_window(
         &mut self,
         entity: Entity,
@@ -91,14 +77,14 @@ impl SdlContext {
 }
 
 //==================================================================================================
-// WinitWindowPressedKeys
+// SdlWindowPressedKeys
 //==================================================================================================
 
 /// This keeps track of which keys are pressed on each window.
 /// When a window is unfocused, this is used to send key release events for all the currently held
 /// keys.
 #[derive(Default, Component)]
-pub struct WinitWindowPressedKeys(pub(crate) HashMap<KeyCode, Key>);
+pub struct SdlWindowPressedKeys(pub(crate) HashMap<KeyCode, Key>);
 
 //==================================================================================================
 // CachedWindow
@@ -169,7 +155,7 @@ pub fn spawn_windows(
         commands.entity(entity).insert((
             CachedWindow(window.clone()),
             CachedCursorOptions(cursor_options.clone()),
-            WinitWindowPressedKeys::default(),
+            SdlWindowPressedKeys::default(),
         ));
 
         if let Ok(handle_wrapper) = RawHandleWrapper::new(sdl_window) {
