@@ -30,6 +30,7 @@
  *          - CachedWindow
  *          - CachedCursorOptions
  *          - WinitWindowPressedKeys
+ *  - Bevy relies on AndroidApp from android-activity crate to access the AssetManager.
  */
 pub use context::*;
 pub use event::RawSdlEvent;
