@@ -1,33 +1,5 @@
-/*
- *  TODO:
- *  - MouseMotion
- *  - ScaleFactorChanged
- *  - KeyboardInput
- *  - CursorMoved
- *  - MouseInput
- *  - PinchGesture
- *  - RotationGesture
- *  - DoubleTapGesture
- *  - PanGesture
- *  - MouseWheel
- *  - Touch
- *  - DroppedFile
- *  - HoveredFile
- *  - HoveredFileCancelled
- *  - Ime
- *  - ThemeChanged
- *  - Destroyed
- */
-use bevy_app::App;
-use bevy_ecs::{
-    change_detection::DetectChanges,
-    entity::Entity,
-    message::{Message, MessageWriter, Messages},
-    system::{Query, SystemParamItem, SystemState},
-    world::{FromWorld, World},
-};
-use bevy_log::{error, warn};
-use bevy_math::{DVec2, IVec2, Vec2};
+use bevy_ecs::{entity::Entity, message::Message, world::World};
+use bevy_math::IVec2;
 use bevy_window::{
     CursorEntered, CursorLeft, Window, WindowCloseRequested, WindowEvent, WindowFocused,
     WindowMoved, WindowOccluded, WindowResized,
@@ -35,13 +7,7 @@ use bevy_window::{
 
 use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
 
-use crate::{
-    context::SdlContext,
-    converters::{
-        keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl, touch_event_from_sdl,
-    },
-    runner::RequestBreakAppLoop,
-};
+use crate::{context::SdlContext, runner::RequestBreakAppLoop};
 
 //==================================================================================================
 // RawSdlEvent

@@ -1,3 +1,36 @@
+/*
+ *  TODO:
+ *  - in bevy_winit/src/state.rs look at:
+ *      - fn window_event
+ *          - ScaleFactorChanged
+ *          - KeyboardInput
+ *          - CursorMoved
+ *          - MouseInput
+ *          - PinchGesture
+ *          - RotationGesture
+ *          - DoubleTapGesture
+ *          - PanGesture
+ *          - MouseWheel
+ *          - Touch
+ *          - DroppedFile
+ *          - HoveredFile
+ *          - HoveredFileCancelled
+ *          - Ime
+ *          - ThemeChanged
+ *          - Destroyed
+ *      - fn device_event
+ *          - MouseMotion
+ *      - fn react_to_scale_factor_change
+ *  - in bevy_winit/src/system.rs look at:
+ *      - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)
+ *      - fn check_keyboard_focus_lost
+ *      - fn changed_windows
+ *      - fn changed_cursor_options
+ *      - Understand why ... exists:
+ *          - CachedWindow
+ *          - CachedCursorOptions
+ *          - WinitWindowPressedKeys
+ */
 pub use context::*;
 pub use event::RawSdlEvent;
 pub use monitors::*;
