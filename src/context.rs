@@ -53,7 +53,7 @@ impl SdlContext {
         }
     }
 
-    fn create_window(
+    pub(crate) fn create_window(
         &mut self,
         entity: Entity,
         bevy_window: &Window,
@@ -63,15 +63,18 @@ impl SdlContext {
             .create(&self.video, entity, bevy_window, sdl_monitors)
     }
 
-    fn destroy_window(&mut self, entity: Entity) -> Option<WindowWrapper<SdlWindowWrapper>> {
+    pub(crate) fn destroy_window(
+        &mut self,
+        entity: Entity,
+    ) -> Option<WindowWrapper<SdlWindowWrapper>> {
         self.windows.destroy(entity)
     }
 
-    fn get_window(&self, entity: Entity) -> Option<&WindowWrapper<SdlWindowWrapper>> {
+    pub(crate) fn get_window(&self, entity: Entity) -> Option<&WindowWrapper<SdlWindowWrapper>> {
         self.windows.get(entity)
     }
 
-    fn get_window_entity(&self, window_id: WindowId) -> Option<Entity> {
+    pub(crate) fn get_window_entity(&self, window_id: WindowId) -> Option<Entity> {
         self.windows.get_entity(window_id)
     }
 }

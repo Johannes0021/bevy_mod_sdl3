@@ -16,7 +16,7 @@ pub fn app_loop(mut app: App) -> AppExit {
         app.cleanup();
     }
 
-    'outer: loop {
+    'app_loop: loop {
         if app.plugins_state() != PluginsState::Cleaned {
             app.finish();
             app.cleanup();
@@ -43,18 +43,28 @@ pub fn app_loop(mut app: App) -> AppExit {
             }
         }
 
-        {
+        let quit = {
             let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+            let mut quit = false;
 
             for event in sdl_context.event_pump.poll_iter() {
-                if let SdlEvent::Quit { .. } = event {
-                    break 'outer;
+                match event {
+                    SdlEvent::Quit { timestamp: _ } | SdlEvent::AppTerminating { timestamp: _ } => {
+                        quit = true
+                    }
+                    _ => (),
                 }
             }
-        }
+
+            quit
+        };
 
         if app.plugins_state() == PluginsState::Cleaned {
             app.update();
+
+            if quit || app.should_exit().is_some() {
+                break 'app_loop;
+            }
         }
     }
 
