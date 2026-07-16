@@ -108,7 +108,7 @@ pub(crate) struct CachedWindow(Window);
 pub(crate) struct CachedCursorOptions(CursorOptions);
 
 //==================================================================================================
-// systems
+// Systems
 //==================================================================================================
 
 pub type SpawnWindowParams<'w, 's> = (

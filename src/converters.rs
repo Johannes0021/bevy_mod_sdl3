@@ -275,7 +275,7 @@ pub fn scancode_from_sdl(scancode: SdlScancode) -> KeyCode {
     }
 }
 
-pub fn key_from_sdl(keycode: SdlKeycode) -> Key {
+pub fn keycode_from_sdl(keycode: SdlKeycode) -> Key {
     match keycode {
         SdlKeycode::ScancodeMask => Key::Unidentified(NativeKey::Unidentified),
         SdlKeycode::Unknown => Key::Unidentified(NativeKey::Unidentified),

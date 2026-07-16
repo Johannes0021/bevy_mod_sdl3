@@ -1,4 +1,5 @@
 pub use context::*;
+pub use event::RawSdlEvent;
 pub use monitors::*;
 pub use windows::*;
 
@@ -10,8 +11,11 @@ use bevy_ecs::{
 };
 use bevy_window::{ExitSystems, Window};
 
+#[cfg(target_os = "android")]
+mod android;
 mod context;
 mod converters;
+mod event;
 mod monitors;
 mod runner;
 mod windows;
@@ -22,6 +26,7 @@ impl Plugin for Sdl3Plugin {
     fn build(&self, app: &mut App) {
         app.insert_non_send(SdlContext::init())
             .init_resource::<SdlMonitors>()
+            .add_message::<RawSdlEvent>()
             .set_runner(runner::app_loop)
             .add_systems(
                 Last,
