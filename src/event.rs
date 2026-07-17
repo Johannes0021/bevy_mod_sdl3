@@ -7,7 +7,11 @@ use bevy_ecs::{
     system::{Query, SystemParamItem, SystemState},
     world::{FromWorld, World},
 };
-use bevy_input::{ButtonState, keyboard::KeyboardInput, mouse::MouseMotion};
+use bevy_input::{
+    ButtonState,
+    keyboard::KeyboardInput,
+    mouse::{MouseButtonInput, MouseMotion},
+};
 use bevy_math::{DVec2, IVec2, Vec2};
 use bevy_window::{
     CursorEntered, CursorLeft, CursorMoved, Window, WindowBackendScaleFactorChanged,
@@ -19,7 +23,7 @@ use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
 
 use crate::{
     context::SdlContext,
-    converters::{keycode_from_sdl, scancode_from_sdl},
+    converters::{keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl},
     monitors::{self, SyncMonitorsParams},
     runner::RequestBreakAppLoop,
 };
@@ -219,59 +223,57 @@ pub(crate) fn handle_sdl_event(
         SdlEvent::MouseButtonDown {
             timestamp: _,
             window_id,
-            which,
+            which: _,
             mouse_btn,
-            clicks,
-            x,
-            y,
+            clicks: _,
+            x: _,
+            y: _,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let entity = windows
-                    .get_window_entity(window_id)
-                    .expect("Window entity not found");
-                let Some(button) = convert_sdl_mouse_btn(mouse_btn) else {
-                    error!("Unknown mouse button: {:?}", mouse_btn);
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::MouseButtonInput(
-                    bevy_input::mouse::MouseButtonInput {
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some((entity, button)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    let button = mouse_button_from_sdl(*mouse_btn)?;
+                    Some((entity, button))
+                })
+            {
+                bevy_window_events.push(
+                    MouseButtonInput {
                         button,
-                        state: bevy_input::ButtonState::Pressed,
+                        state: ButtonState::Pressed,
                         window: entity,
-                    },
-                ));
-            });
-            */
+                    }
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::MouseButtonUp {
             timestamp: _,
             window_id,
-            which,
+            which: _,
             mouse_btn,
-            clicks,
-            x,
-            y,
+            clicks: _,
+            x: _,
+            y: _,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let entity = windows
-                    .get_window_entity(window_id)
-                    .expect("Window entity not found");
-                let Some(button) = convert_sdl_mouse_btn(mouse_btn) else {
-                    error!("Unknown mouse button: {:?}", mouse_btn);
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::MouseButtonInput(
-                    bevy_input::mouse::MouseButtonInput {
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some((entity, button)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    let button = mouse_button_from_sdl(*mouse_btn)?;
+                    Some((entity, button))
+                })
+            {
+                bevy_window_events.push(
+                    MouseButtonInput {
                         button,
-                        state: bevy_input::ButtonState::Released,
+                        state: ButtonState::Released,
                         window: entity,
-                    },
-                ));
-            });
-            */
+                    }
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::MouseWheel {

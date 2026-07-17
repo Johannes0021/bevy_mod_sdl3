@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use bevy_app::AppExit;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
@@ -11,7 +9,6 @@ use bevy_ecs::{
     query::{Added, With},
     system::{Commands, Local, Query, SystemParamItem},
 };
-use bevy_input::keyboard::{Key, KeyCode};
 use bevy_log::info;
 use bevy_window::{
     ClosingWindow, CursorOptions, RawHandleWrapper, RawHandleWrapperHolder, Window, WindowClosed,

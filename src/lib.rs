@@ -3,7 +3,6 @@
  * - Do we need to release input when focus is lost?
  * - in bevy_winit/src/state.rs look at:
  *     - fn window_event
- *         - MouseInput
  *         - PinchGesture
  *         - RotationGesture
  *         - DoubleTapGesture
