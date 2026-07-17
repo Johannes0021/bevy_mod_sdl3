@@ -1,7 +1,10 @@
+use std::path::PathBuf;
+
 use approx::relative_eq;
 
 use bevy_ecs::{
     change_detection::NonSendMut,
+    component::Component,
     entity::Entity,
     message::Message,
     system::{Query, SystemParamItem, SystemState},
@@ -15,9 +18,9 @@ use bevy_input::{
 };
 use bevy_math::{DVec2, IVec2, Vec2};
 use bevy_window::{
-    CursorEntered, CursorLeft, CursorMoved, Window, WindowBackendScaleFactorChanged,
-    WindowCloseRequested, WindowEvent, WindowFocused, WindowMoved, WindowOccluded, WindowResized,
-    WindowScaleFactorChanged,
+    CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop, Window,
+    WindowBackendScaleFactorChanged, WindowCloseRequested, WindowEvent, WindowFocused, WindowMoved,
+    WindowOccluded, WindowResized, WindowScaleFactorChanged,
 };
 
 use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
@@ -37,6 +40,13 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq, Message)]
 pub struct RawSdlEvent(pub SdlEvent);
+
+//==================================================================================================
+// FileDragAndDropSuccess
+//==================================================================================================
+
+#[derive(Component, Clone, Copy)]
+struct FileDragAndDropSuccess(bool);
 
 //==================================================================================================
 // SdlEvent
@@ -67,7 +77,7 @@ pub(crate) fn handle_sdl_event(
             window_id,
             win_event,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some(entity) = sdl_context.get_window_entity((*window_id).into()) {
                 handle_sdl_window_event(world, entity, *win_event, bevy_window_events);
             }
@@ -83,7 +93,7 @@ pub(crate) fn handle_sdl_event(
             which: _,
             raw: _,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some((entity, key_code, logical_key)) = sdl_context
                 .get_window_entity((*window_id).into())
                 .and_then(|entity| {
@@ -116,7 +126,7 @@ pub(crate) fn handle_sdl_event(
             which: _,
             raw: _,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some((entity, key_code, logical_key)) = sdl_context
                 .get_window_entity((*window_id).into())
                 .and_then(|entity| {
@@ -191,7 +201,7 @@ pub(crate) fn handle_sdl_event(
             let delta = Vec2::new(*xrel as f32, *yrel as f32);
             bevy_window_events.push(MouseMotion { delta }.into());
 
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some((entity, cursor_position, cursor_delta)) = sdl_context
                 .get_window_entity((*window_id).into())
                 .and_then(|entity| {
@@ -232,7 +242,7 @@ pub(crate) fn handle_sdl_event(
             x: _,
             y: _,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some((entity, button)) = sdl_context
                 .get_window_entity((*window_id).into())
                 .and_then(|entity| {
@@ -260,7 +270,7 @@ pub(crate) fn handle_sdl_event(
             x: _,
             y: _,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some((entity, button)) = sdl_context
                 .get_window_entity((*window_id).into())
                 .and_then(|entity| {
@@ -291,7 +301,7 @@ pub(crate) fn handle_sdl_event(
             integer_x: _,
             integer_y: _,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some(entity) = sdl_context.get_window_entity((*window_id).into()) {
                 bevy_window_events.push(
                     MouseWheel {
@@ -402,7 +412,7 @@ pub(crate) fn handle_sdl_event(
             pressure,
             window_id,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some((entity, logical_position)) = sdl_context
                 .get_window_entity((*window_id).into())
                 .and_then(|entity| {
@@ -436,7 +446,7 @@ pub(crate) fn handle_sdl_event(
             pressure,
             window_id,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some((entity, logical_position)) = sdl_context
                 .get_window_entity((*window_id).into())
                 .and_then(|entity| {
@@ -470,7 +480,7 @@ pub(crate) fn handle_sdl_event(
             pressure,
             window_id,
         } => {
-            let sdl_context = world.non_send_mut::<SdlContext>();
+            let sdl_context = world.non_send::<SdlContext>();
             if let Some((entity, logical_position)) = sdl_context
                 .get_window_entity((*window_id).into())
                 .and_then(|entity| {
@@ -516,40 +526,79 @@ pub(crate) fn handle_sdl_event(
         SdlEvent::ClipboardUpdate { timestamp: _ } => (),
 
         SdlEvent::DropFile {
-            timestamp,
+            timestamp: _,
             window_id,
             filename,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let Some(entity) = windows.get_window_entity(window_id) else {
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::FileDragAndDrop(
-                    bevy_window::FileDragAndDrop::DroppedFile {
+            let sdl_context = world.non_send::<SdlContext>();
+            if let Some(entity) = sdl_context.get_window_entity((*window_id).into()) {
+                world
+                    .entity_mut(entity)
+                    .insert(FileDragAndDropSuccess(true));
+                // Workaround see: SdlEvent::DropBegin
+                bevy_window_events.push(
+                    FileDragAndDrop::HoveredFile {
                         window: entity,
-                        path_buf: std::path::PathBuf::from(filename),
-                    },
-                ));
-            });
-            */
+                        path_buf: PathBuf::from(filename),
+                    }
+                    .into(),
+                );
+                bevy_window_events.push(
+                    FileDragAndDrop::DroppedFile {
+                        window: entity,
+                        path_buf: PathBuf::from(filename),
+                    }
+                    .into(),
+                );
+            }
         }
 
+        // TODO: I think bevy doesn't currently support this.
         SdlEvent::DropText {
-            timestamp,
-            window_id,
-            filename,
+            timestamp: _,
+            window_id: _,
+            filename: _, // Why is this field called `filename` instead of `text`?
         } => (),
 
+        // TODO: `FileDragAndDrop::HoveredFile` should be sent here, but the filename is not
+        // available. As a workaround, we emit `FileDragAndDrop::HoveredFile` and immediately
+        // follow it with `FileDragAndDrop::DroppedFile` when handling `SdlEvent::DropFile`.
         SdlEvent::DropBegin {
-            timestamp,
+            timestamp: _,
             window_id,
-        } => (),
+        } => {
+            let sdl_context = world.non_send::<SdlContext>();
+            if let Some(entity) = sdl_context.get_window_entity((*window_id).into()) {
+                world
+                    .entity_mut(entity)
+                    .insert(FileDragAndDropSuccess(false));
+            }
+        }
 
         SdlEvent::DropComplete {
-            timestamp,
+            timestamp: _,
             window_id,
-        } => (),
+        } => {
+            let entity = {
+                let sdl_context = world.non_send::<SdlContext>();
+                sdl_context.get_window_entity((*window_id).into())
+            };
+
+            if let Some(entity) = entity {
+                let mut entity_mut = world.entity_mut(entity);
+
+                if let Some(FileDragAndDropSuccess(success)) =
+                    entity_mut.get::<FileDragAndDropSuccess>().copied()
+                {
+                    entity_mut.remove::<FileDragAndDropSuccess>();
+
+                    if !success {
+                        bevy_window_events
+                            .push(FileDragAndDrop::HoveredFileCanceled { window: entity }.into());
+                    }
+                }
+            }
+        }
 
         SdlEvent::AudioDeviceAdded {
             timestamp,

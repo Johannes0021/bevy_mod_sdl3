@@ -9,9 +9,6 @@
  *         - RotationGesture
  *         - DoubleTapGesture
  *         - PanGesture
- *         - DroppedFile
- *         - HoveredFile
- *         - HoveredFileCancelled
  *         - Ime
  *         - ThemeChanged
  *         - Destroyed
