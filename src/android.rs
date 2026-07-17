@@ -50,7 +50,7 @@ pub(crate) fn ensure_surface_exists(
     // suspended.
 
     let (entity, window) = *window;
-    let sdl_window = sdl_context.create_window(entity, &window, &sdl_monitors);
+    let sdl_window = sdl_context.create_window(entity, window, &sdl_monitors);
     if let Ok(handle_wrapper) = RawHandleWrapper::new(sdl_window) {
         commands.entity(entity).insert(handle_wrapper.clone());
     }

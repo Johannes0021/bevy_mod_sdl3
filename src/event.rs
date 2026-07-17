@@ -30,7 +30,7 @@ use crate::{
     converters::{
         keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl, touch_event_from_sdl,
     },
-    monitors::{self, SyncMonitorsParams},
+    monitors::{SyncMonitorsParams, sync_monitors},
     runner::RequestAppLoopState,
 };
 
@@ -539,9 +539,9 @@ pub(crate) fn handle_sdl_event(
             display: _,
             display_event: _,
         } => {
-            let mut sync_monitors = SystemState::<SyncMonitorsParams>::from_world(world);
-            monitors::sync_monitors(sync_monitors.get_mut(world).unwrap());
-            sync_monitors.apply(world);
+            let mut sync_monitors_state = SystemState::<SyncMonitorsParams>::from_world(world);
+            sync_monitors(sync_monitors_state.get_mut(world).unwrap());
+            sync_monitors_state.apply(world);
 
             let mut sync_window_scale_factors_state =
                 SystemState::<SyncWindowScaleFactorsParams>::from_world(world);
