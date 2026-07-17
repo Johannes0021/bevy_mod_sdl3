@@ -544,8 +544,7 @@ pub fn mouse_button_from_sdl(mouse_button: SdlMouseButton) -> Option<MouseButton
 pub fn touch_event_from_sdl(
     phase: TouchPhase,
     finger_id: i64,
-    x: f32,
-    y: f32,
+    logical_position: Vec2,
     pressure: f32,
     window: Entity,
 ) -> TouchInput {
@@ -557,7 +556,7 @@ pub fn touch_event_from_sdl(
 
     TouchInput {
         phase,
-        position: Vec2::new(x, y),
+        position: logical_position,
         window,
         force,
         id: finger_id as u64,

@@ -24,7 +24,9 @@ use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
 
 use crate::{
     context::SdlContext,
-    converters::{keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl},
+    converters::{
+        keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl, touch_event_from_sdl,
+    },
     monitors::{self, SyncMonitorsParams},
     runner::RequestBreakAppLoop,
 };
@@ -390,93 +392,105 @@ pub(crate) fn handle_sdl_event(
         } => (),
 
         SdlEvent::FingerDown {
-            timestamp,
-            touch_id,
+            timestamp: _,
+            touch_id: _,
             finger_id,
             x,
             y,
-            dx,
-            dy,
+            dx: _,
+            dy: _,
             pressure,
             window_id,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let Some(entity) = windows.get_window_entity(0) else {
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::TouchInput(
-                    convert_sdl_touch_event(
-                        bevy_input::touch::TouchPhase::Started,
-                        finger_id,
-                        x,
-                        y,
-                        pressure,
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some((entity, logical_position)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    try_with_window(world, entity, |window| {
+                        let logical_position = window.size() * Vec2::new(*x, *y);
+                        (entity, logical_position)
+                    })
+                })
+            {
+                bevy_window_events.push(
+                    touch_event_from_sdl(
+                        TouchPhase::Started,
+                        *finger_id as i64,
+                        logical_position,
+                        *pressure,
                         entity,
-                    ),
-                ));
-            });
-            */
+                    )
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::FingerUp {
-            timestamp,
-            touch_id,
+            timestamp: _,
+            touch_id: _,
             finger_id,
             x,
             y,
-            dx,
-            dy,
+            dx: _,
+            dy: _,
             pressure,
             window_id,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let Some(entity) = windows.get_window_entity(0) else {
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::TouchInput(
-                    convert_sdl_touch_event(
-                        bevy_input::touch::TouchPhase::Ended,
-                        finger_id,
-                        x,
-                        y,
-                        pressure,
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some((entity, logical_position)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    try_with_window(world, entity, |window| {
+                        let logical_position = window.size() * Vec2::new(*x, *y);
+                        (entity, logical_position)
+                    })
+                })
+            {
+                bevy_window_events.push(
+                    touch_event_from_sdl(
+                        TouchPhase::Ended,
+                        *finger_id as i64,
+                        logical_position,
+                        *pressure,
                         entity,
-                    ),
-                ));
-            });
-            */
+                    )
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::FingerMotion {
-            timestamp,
-            touch_id,
+            timestamp: _,
+            touch_id: _,
             finger_id,
             x,
             y,
-            dx,
-            dy,
+            dx: _,
+            dy: _,
             pressure,
             window_id,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let Some(entity) = windows.get_window_entity(0) else {
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::TouchInput(
-                    convert_sdl_touch_event(
-                        bevy_input::touch::TouchPhase::Moved,
-                        finger_id,
-                        x,
-                        y,
-                        pressure,
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some((entity, logical_position)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    try_with_window(world, entity, |window| {
+                        let logical_position = window.size() * Vec2::new(*x, *y);
+                        (entity, logical_position)
+                    })
+                })
+            {
+                bevy_window_events.push(
+                    touch_event_from_sdl(
+                        TouchPhase::Moved,
+                        *finger_id as i64,
+                        logical_position,
+                        *pressure,
                         entity,
-                    ),
-                ));
-            });
-            */
+                    )
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::DollarRecord {
