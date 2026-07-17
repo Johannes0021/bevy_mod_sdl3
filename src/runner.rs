@@ -4,8 +4,6 @@ use bevy_app::{App, AppExit, PluginsState};
 use bevy_ecs::{system::SystemState, world::FromWorld};
 use bevy_window::WindowDestroyed;
 
-use sdl3::event::Event as SdlEvent;
-
 #[cfg(target_os = "android")]
 use crate::android;
 use crate::{
@@ -16,7 +14,12 @@ use crate::{
 
 const SUSPENDED_DELAY_MS: u32 = 100;
 
-pub(crate) struct RequestBreakAppLoop(pub bool);
+pub(crate) enum RequestAppLoopState {
+    Continue,
+    SuspendAndContinue,
+    ResumeAndContinue,
+    Break,
+}
 
 pub(crate) fn app_loop(mut app: App) -> AppExit {
     if app.plugins_state() == PluginsState::Ready {
@@ -83,22 +86,17 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
             }
 
             for event in &sdl_events {
-                match &event {
-                    SdlEvent::AppWillEnterBackground { timestamp: _ } => {
+                match handle_sdl_event(app.world_mut(), event, &mut bevy_window_events) {
+                    RequestAppLoopState::Continue => (),
+                    RequestAppLoopState::SuspendAndContinue => {
                         #[cfg(target_os = "android")]
                         {
                             iter_state.trigger_surface_destruction = true;
                         }
                         iter_state.suspend = true;
                     }
-                    SdlEvent::AppDidEnterForeground { timestamp: _ } => iter_state.suspend = false,
-                    _ => (),
-                }
-
-                if let RequestBreakAppLoop(true) =
-                    handle_sdl_event(app.world_mut(), event, &mut bevy_window_events)
-                {
-                    iter_state.break_app_loop = true;
+                    RequestAppLoopState::ResumeAndContinue => iter_state.suspend = false,
+                    RequestAppLoopState::Break => iter_state.break_app_loop = true,
                 }
             }
 

@@ -31,7 +31,7 @@ use crate::{
         keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl, touch_event_from_sdl,
     },
     monitors::{self, SyncMonitorsParams},
-    runner::RequestBreakAppLoop,
+    runner::RequestAppLoopState,
 };
 
 //==================================================================================================
@@ -56,21 +56,25 @@ pub(crate) fn handle_sdl_event(
     world: &mut World,
     sdl_event: &SdlEvent,
     bevy_window_events: &mut Vec<WindowEvent>,
-) -> RequestBreakAppLoop {
+) -> RequestAppLoopState {
     match sdl_event {
         SdlEvent::Quit { timestamp: _ } | SdlEvent::AppTerminating { timestamp: _ } => {
-            return RequestBreakAppLoop(true);
+            return RequestAppLoopState::Break;
         }
 
         SdlEvent::AppLowMemory { timestamp: _ } => {} // TODO?
 
-        SdlEvent::AppWillEnterBackground { timestamp: _ } => (), // TODO!!!
+        SdlEvent::AppWillEnterBackground { timestamp: _ } => {
+            return RequestAppLoopState::SuspendAndContinue;
+        }
 
-        SdlEvent::AppDidEnterBackground { timestamp: _ } => (), // TODO!!!
+        SdlEvent::AppDidEnterBackground { timestamp: _ } => (),
 
-        SdlEvent::AppWillEnterForeground { timestamp: _ } => (), // TODO!!!
+        SdlEvent::AppWillEnterForeground { timestamp: _ } => (),
 
-        SdlEvent::AppDidEnterForeground { timestamp: _ } => (), // TODO!!!
+        SdlEvent::AppDidEnterForeground { timestamp: _ } => {
+            return RequestAppLoopState::ResumeAndContinue;
+        }
 
         SdlEvent::Window {
             timestamp: _,
@@ -549,7 +553,7 @@ pub(crate) fn handle_sdl_event(
         }
     }
 
-    RequestBreakAppLoop(false)
+    RequestAppLoopState::Continue
 }
 
 //==================================================================================================
