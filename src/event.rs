@@ -1,14 +1,27 @@
-use bevy_ecs::{entity::Entity, message::Message, world::World};
+use approx::relative_eq;
+
+use bevy_ecs::{
+    change_detection::NonSendMut,
+    entity::Entity,
+    message::Message,
+    system::{Query, SystemParamItem, SystemState},
+    world::{FromWorld, World},
+};
 use bevy_input::mouse::MouseMotion;
 use bevy_math::{DVec2, IVec2, Vec2};
 use bevy_window::{
-    CursorEntered, CursorLeft, CursorMoved, Window, WindowCloseRequested, WindowEvent,
-    WindowFocused, WindowMoved, WindowOccluded, WindowResized,
+    CursorEntered, CursorLeft, CursorMoved, Window, WindowBackendScaleFactorChanged,
+    WindowCloseRequested, WindowEvent, WindowFocused, WindowMoved, WindowOccluded, WindowResized,
+    WindowScaleFactorChanged,
 };
 
 use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
 
-use crate::{context::SdlContext, runner::RequestBreakAppLoop};
+use crate::{
+    context::SdlContext,
+    monitors::{self, SyncMonitorsParams},
+    runner::RequestBreakAppLoop,
+};
 
 //==================================================================================================
 // RawSdlEvent
@@ -620,10 +633,22 @@ pub(crate) fn handle_sdl_event(
         SdlEvent::Unknown { timestamp, type_ } => (),
 
         SdlEvent::Display {
-            timestamp,
-            display,
-            display_event,
-        } => (),
+            timestamp: _,
+            display: _,
+            display_event: _,
+        } => {
+            let mut sync_monitors = SystemState::<SyncMonitorsParams>::from_world(world);
+            monitors::sync_monitors(sync_monitors.get_mut(world).unwrap());
+            sync_monitors.apply(world);
+
+            let mut sync_window_scale_factors_state =
+                SystemState::<SyncWindowScaleFactorsParams>::from_world(world);
+            sync_window_scale_factors(
+                sync_window_scale_factors_state.get_mut(world).unwrap(),
+                bevy_window_events,
+            );
+            sync_window_scale_factors_state.apply(world);
+        }
     }
 
     RequestBreakAppLoop(false)
@@ -763,6 +788,15 @@ pub fn handle_sdl_window_event(
 
         SdlWindowEvent::DisplayChanged(_) => (),
     }
+
+    // Just to make this sure...
+    let mut sync_window_scale_factors_state =
+        SystemState::<SyncWindowScaleFactorsParams>::from_world(world);
+    sync_window_scale_factors(
+        sync_window_scale_factors_state.get_mut(world).unwrap(),
+        bevy_window_events,
+    );
+    sync_window_scale_factors_state.apply(world);
 }
 
 //==================================================================================================
@@ -876,4 +910,66 @@ where
     } else {
         None
     }
+}
+
+pub type SyncWindowScaleFactorsParams<'w, 's> = (
+    NonSendMut<'w, SdlContext>,
+    Query<'w, 's, (Entity, &'static mut Window)>,
+);
+
+pub(crate) fn sync_window_scale_factors(
+    (sdl_context, mut windows): SystemParamItem<SyncWindowScaleFactorsParams>,
+    bevy_window_events: &mut Vec<WindowEvent>,
+) {
+    for (window_entity, mut window) in &mut windows {
+        let Some(scale_factor) = sdl_context
+            .get_window(window_entity)
+            .map(|w| w.display_scale() as f64)
+        else {
+            continue;
+        };
+
+        let (window_backend_scale_factor_changed, window_scale_factor_changed) =
+            react_to_scale_factor_change(window_entity, &mut window, scale_factor);
+
+        bevy_window_events.push(window_backend_scale_factor_changed.into());
+        if let Some(window_scale_factor_changed) = window_scale_factor_changed {
+            bevy_window_events.push(window_scale_factor_changed.into());
+        }
+    }
+}
+
+fn react_to_scale_factor_change(
+    window_entity: Entity,
+    window: &mut Window,
+    scale_factor: f64,
+) -> (
+    WindowBackendScaleFactorChanged,
+    Option<WindowScaleFactorChanged>,
+) {
+    let prior_factor = window.resolution.scale_factor();
+    window.resolution.set_scale_factor(scale_factor as f32);
+
+    let window_backend_scale_factor_changed = WindowBackendScaleFactorChanged {
+        window: window_entity,
+        scale_factor,
+    };
+
+    let scale_factor_override = window.resolution.scale_factor_override();
+
+    let window_scale_factor_changed =
+        if scale_factor_override.is_none() && !relative_eq!(scale_factor as f32, prior_factor) {
+            let window_scale_factor_changed = WindowScaleFactorChanged {
+                window: window_entity,
+                scale_factor,
+            };
+            Some(window_scale_factor_changed)
+        } else {
+            None
+        };
+
+    (
+        window_backend_scale_factor_changed,
+        window_scale_factor_changed,
+    )
 }

@@ -2,7 +2,6 @@
  *  TODO:
  *  - in bevy_winit/src/state.rs look at:
  *      - fn window_event
- *          - ScaleFactorChanged
  *          - KeyboardInput
  *          - MouseInput
  *          - PinchGesture
@@ -17,7 +16,6 @@
  *          - Ime
  *          - ThemeChanged
  *          - Destroyed
- *      - fn react_to_scale_factor_change
  *  - in bevy_winit/src/system.rs look at:
  *      - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)
  *      - fn check_keyboard_focus_lost

@@ -24,6 +24,7 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
     }
 
     let mut break_after_next_app_loop = false;
+    let mut init_monitor_sync = false;
     let mut suspended = false;
 
     'app_loop: loop {
@@ -33,11 +34,15 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
             continue;
         }
 
-        {
+        if !init_monitor_sync {
+            init_monitor_sync = true;
+
             let mut sync_monitors = SystemState::<SyncMonitorsParams>::from_world(app.world_mut());
             monitors::sync_monitors(sync_monitors.get_mut(app.world_mut()).unwrap());
             sync_monitors.apply(app.world_mut());
+        }
 
+        {
             let needs_to_spawn_sdl_windows = mem::replace(
                 &mut app
                     .world_mut()
