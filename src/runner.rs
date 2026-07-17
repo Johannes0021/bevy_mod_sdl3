@@ -15,7 +15,7 @@ use bevy_window::{Window, WindowDestroyed};
 use crate::android;
 use crate::{
     config::{FrameRate, SdlSettings},
-    context::{SdlContext, SpawnWindowParams, spawn_windows},
+    context::{CreateWindowParams, SdlContext, create_windows},
     event::{RawSdlEvent, forward_bevy_window_events, handle_sdl_event},
     monitors::{SyncMonitorsParams, sync_monitors},
 };
@@ -60,19 +60,19 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
         }
 
         {
-            let needs_to_spawn_sdl_windows = mem::replace(
+            let needs_to_create_sdl_windows = mem::replace(
                 &mut app
                     .world_mut()
                     .non_send_mut::<SdlContext>()
-                    .needs_to_spawn_sdl_windows,
+                    .needs_to_create_sdl_windows,
                 false,
             );
 
-            if needs_to_spawn_sdl_windows {
-                let mut spawn_windows_state =
-                    SystemState::<SpawnWindowParams>::from_world(app.world_mut());
-                spawn_windows(spawn_windows_state.get_mut(app.world_mut()).unwrap());
-                spawn_windows_state.apply(app.world_mut());
+            if needs_to_create_sdl_windows {
+                let mut create_windows_state =
+                    SystemState::<CreateWindowParams>::from_world(app.world_mut());
+                create_windows(create_windows_state.get_mut(app.world_mut()).unwrap());
+                create_windows_state.apply(app.world_mut());
             }
         }
 

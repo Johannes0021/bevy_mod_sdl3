@@ -63,13 +63,13 @@ impl Plugin for Sdl3Plugin {
                 (
                     //changed_windows,
                     //changed_cursor_options,
-                    despawn_windows.after(ExitSystems), /* TODO: .after(OnAppExitSystems), */
+                    destroy_windows.after(ExitSystems), /* TODO: .after(OnAppExitSystems), */
                 )
                     .chain(),
             )
             .add_observer(
                 |_window: On<Add, Window>, mut sdl_context: NonSendMut<SdlContext>| {
-                    sdl_context.needs_to_spawn_sdl_windows = true;
+                    sdl_context.needs_to_create_sdl_windows = true;
                 },
             );
     }

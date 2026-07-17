@@ -40,7 +40,7 @@ pub struct SdlContext {
     pub(crate) event_rx: mpsc::Receiver<SdlEvent>,
     pub(crate) _event_watch: Box<dyn Any + Send>,
     pub(crate) event_pump: SdlEventPump,
-    pub(crate) needs_to_spawn_sdl_windows: bool,
+    pub(crate) needs_to_create_sdl_windows: bool,
     pub(crate) destroyed_windows: Vec<Entity>,
 }
 
@@ -63,7 +63,7 @@ impl SdlContext {
             event_rx,
             _event_watch: event_watch,
             event_pump,
-            needs_to_spawn_sdl_windows: true,
+            needs_to_create_sdl_windows: true,
             destroyed_windows: Default::default(),
         }
     }
@@ -121,7 +121,7 @@ pub(crate) struct CachedCursorOptions(CursorOptions);
 // Systems
 //==================================================================================================
 
-pub type SpawnWindowParams<'w, 's> = (
+pub type CreateWindowParams<'w, 's> = (
     Commands<'w, 's>,
     NonSendMut<'w, SdlContext>,
     Res<'w, SdlMonitors>,
@@ -139,14 +139,14 @@ pub type SpawnWindowParams<'w, 's> = (
     >,
 );
 
-pub fn spawn_windows(
+pub fn create_windows(
     (
         mut commands,
         mut sdl_context,
         sdl_monitors,
         mut window_created_events,
         mut created_windows,
-    ): SystemParamItem<SpawnWindowParams>,
+    ): SystemParamItem<CreateWindowParams>,
 ) {
     for (entity, mut window, cursor_options, handle_holder) in &mut created_windows {
         if sdl_context.get_window(entity).is_some() {
@@ -191,7 +191,7 @@ pub fn spawn_windows(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(crate) fn despawn_windows(
+pub(crate) fn destroy_windows(
     mut sdl_context: NonSendMut<SdlContext>,
     closing: Query<Entity, With<ClosingWindow>>,
     mut closed: RemovedComponents<Window>,
