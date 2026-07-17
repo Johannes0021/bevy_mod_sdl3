@@ -149,44 +149,9 @@ pub(crate) fn handle_sdl_event(
             }
         }
 
-        SdlEvent::TextEditing {
-            timestamp: _,
-            window_id,
-            text,
-            start,
-            length,
-        } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let Some(entity) = windows.get_window_entity(window_id) else {
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::Ime(bevy_window::Ime::Preedit {
-                    window: entity,
-                    value: text.clone(),
-                    cursor: Some((start as usize, (start + length) as usize)),
-                }));
-            });
-            */
-        }
+        SdlEvent::TextEditing { .. } => (), // TODO
 
-        SdlEvent::TextInput {
-            timestamp: _,
-            window_id,
-            text,
-        } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let Some(entity) = windows.get_window_entity(window_id) else {
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::Ime(bevy_window::Ime::Commit {
-                    window: entity,
-                    value: text.clone(),
-                }));
-            });
-            */
-        }
+        SdlEvent::TextInput { .. } => (), // TODO
 
         SdlEvent::MouseMotion {
             timestamp: _,
