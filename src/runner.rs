@@ -80,10 +80,13 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
                 bevy_window_events.push(WindowDestroyed { window }.into());
             }
 
-            let mut sdl_events = Vec::new();
-            for event in sdl_context.event_pump.poll_iter() {
-                sdl_events.push(event);
-            }
+            // While testing, I noticed that on iOS the application lifecycle events are only
+            // delivered through the sdl event watch and are not received via
+            // EventPump::poll_iter(). Therefore, lifecycle events are forwarded to the loop thread
+            // through the event channel. There may be a better design, or I may be missing
+            // something.
+            for _ in sdl_context.event_pump.poll_iter() {}
+            let sdl_events: Vec<_> = sdl_context.event_rx.try_iter().collect();
 
             for event in &sdl_events {
                 match handle_sdl_event(app.world_mut(), event, &mut bevy_window_events) {

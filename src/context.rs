@@ -1,3 +1,5 @@
+use std::{any::Any, sync::mpsc};
+
 use bevy_app::AppExit;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
@@ -15,7 +17,10 @@ use bevy_window::{
     WindowClosing, WindowCreated, WindowWrapper,
 };
 
-use sdl3::{EventPump as SdlEventPump, Sdl, VideoSubsystem as SdlVideoSubsystem};
+use sdl3::{
+    EventPump as SdlEventPump, EventSubsystem as SdlEventSubsystem, Sdl,
+    VideoSubsystem as SdlVideoSubsystem, event::Event as SdlEvent,
+};
 
 use crate::{
     converters::theme_from_sdl,
@@ -29,8 +34,11 @@ use crate::{
 
 pub struct SdlContext {
     pub sdl: Sdl,
+    pub event: SdlEventSubsystem,
     pub video: SdlVideoSubsystem,
     windows: SdlWindows,
+    pub(crate) event_rx: mpsc::Receiver<SdlEvent>,
+    pub(crate) _event_watch: Box<dyn Any + Send>,
     pub(crate) event_pump: SdlEventPump,
     pub(crate) needs_to_spawn_sdl_windows: bool,
     pub(crate) destroyed_windows: Vec<Entity>,
@@ -39,13 +47,21 @@ pub struct SdlContext {
 impl SdlContext {
     pub fn init() -> Self {
         let sdl = sdl3::init().unwrap();
+        let event = sdl.event().unwrap();
+        let (event_tx, event_rx) = mpsc::channel();
+        let event_watch = Box::new(event.add_event_watch(move |event| {
+            let _ = event_tx.send(event);
+        }));
         let event_pump = sdl.event_pump().unwrap();
         let video = sdl.video().unwrap();
 
         Self {
             sdl,
+            event,
             video,
             windows: Default::default(),
+            event_rx,
+            _event_watch: event_watch,
             event_pump,
             needs_to_spawn_sdl_windows: true,
             destroyed_windows: Default::default(),
