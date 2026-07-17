@@ -33,6 +33,7 @@ pub struct SdlContext {
     windows: SdlWindows,
     pub(crate) event_pump: SdlEventPump,
     pub(crate) needs_to_spawn_sdl_windows: bool,
+    pub(crate) destroyed_windows: Vec<Entity>,
 }
 
 impl SdlContext {
@@ -44,9 +45,10 @@ impl SdlContext {
         Self {
             sdl,
             video,
-            windows: SdlWindows::new(),
+            windows: Default::default(),
             event_pump,
             needs_to_spawn_sdl_windows: true,
+            destroyed_windows: Default::default(),
         }
     }
 
@@ -64,7 +66,12 @@ impl SdlContext {
         &mut self,
         entity: Entity,
     ) -> Option<WindowWrapper<SdlWindowWrapper>> {
-        self.windows.destroy(entity)
+        let window = self.windows.destroy(entity);
+        if window.is_some() {
+            self.destroyed_windows.push(entity);
+        }
+
+        window
     }
 
     pub(crate) fn get_window(&self, entity: Entity) -> Option<&WindowWrapper<SdlWindowWrapper>> {
@@ -204,7 +211,7 @@ pub(crate) fn despawn_windows(
 
     // On macOS, many things need to be dropped on the main thread, or the app will hang:
     // - notify the rendering thread the windows are about to close
-    // - take the `WindowWrapper`s out of `WINIT_WINDOWS` and into the local `windows_to_drop`
+    // - take the `WindowWrapper`s out of `SdlWindows` and into the local `windows_to_drop`
     if !exit_event_reader.is_empty() {
         exit_event_reader.clear();
 

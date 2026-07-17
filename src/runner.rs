@@ -2,6 +2,7 @@ use std::mem;
 
 use bevy_app::{App, AppExit, PluginsState};
 use bevy_ecs::{system::SystemState, world::FromWorld};
+use bevy_window::WindowDestroyed;
 
 use sdl3::event::Event as SdlEvent;
 
@@ -69,14 +70,18 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
 
         let iter_state = {
             let mut iter_state = IterState::default();
-
             let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+
+            let mut bevy_window_events = Vec::new();
+            for window in sdl_context.destroyed_windows.drain(..) {
+                bevy_window_events.push(WindowDestroyed { window }.into());
+            }
+
             let mut sdl_events = Vec::new();
             for event in sdl_context.event_pump.poll_iter() {
                 sdl_events.push(event);
             }
 
-            let mut bevy_window_events = Vec::new();
             for event in &sdl_events {
                 match &event {
                     SdlEvent::AppWillEnterBackground { timestamp: _ } => {

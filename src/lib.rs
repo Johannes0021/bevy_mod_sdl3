@@ -1,26 +1,27 @@
 /*
  * TODO:
- * - Do we need to release input when focus is lost?
- * - Does sdl3 support SdlEvent::MouseWheel MouseScrollUnit::Pixel?
- * - I couldn't find SDL_EVENT_FINGER_CANCELED in sdl3-rs Event (TouchPhase::Canceled);
- * - I couldn't find SDL_EVENT_SYSTEM_THEME_CHANGED in sdl3-rs Event (ThemeChanged);
- * - in bevy_winit/src/state.rs look at:
- *     - fn window_event
- *         - PinchGesture
- *         - RotationGesture
- *         - DoubleTapGesture
- *         - PanGesture
- *         - Destroyed
- *         - ThemeChanged
- *         - Ime
+ *  - Bevy relies on AndroidApp from android-activity crate to access the AssetManager.
+ *  - Do we need to release input when focus is lost?
+ *  - Does sdl3 support SdlEvent::MouseWheel MouseScrollUnit::Pixel?
+ *      - In bevy_winit/src/state.rs look at: WindowEvent::MouseWheel
+ *  - I couldn't find SDL_EVENT_FINGER_CANCELED in sdl3-rs Event (TouchPhase::Canceled);
+ *      - In bevy_winit/src/state.rs look at: WindowEvent::Touch
+ *  - I couldn't find SDL_EVENT_SYSTEM_THEME_CHANGED in sdl3-rs Event (ThemeChanged);
+ *      - In bevy_winit/src/state.rs look at: WindowEvent::ThemeChanged
+ *  - In bevy_winit/src/state.rs look at:
+ *      - fn window_event
+ *          - PinchGesture
+ *          - RotationGesture
+ *          - DoubleTapGesture
+ *          - PanGesture
+ *          - WindowEvent::Ime
  * - in bevy_winit/src/system.rs look at:
  *     - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)
  *     - fn changed_windows
  *     - fn changed_cursor_options
  *     - Understand why ... exists:
- *         - CachedWindow
- *         - CachedCursorOptions
- * - Bevy relies on AndroidApp from android-activity crate to access the AssetManager.
+ *          - CachedWindow
+ *          - CachedCursorOptions
  * - Impl bevy_winit/src/cursor/mod.rs
  * - Impl bevy_winit/src/accessibility.rs
  */
