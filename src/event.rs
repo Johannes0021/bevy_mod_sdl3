@@ -7,7 +7,7 @@ use bevy_ecs::{
     system::{Query, SystemParamItem, SystemState},
     world::{FromWorld, World},
 };
-use bevy_input::mouse::MouseMotion;
+use bevy_input::{ButtonState, keyboard::KeyboardInput, mouse::MouseMotion};
 use bevy_math::{DVec2, IVec2, Vec2};
 use bevy_window::{
     CursorEntered, CursorLeft, CursorMoved, Window, WindowBackendScaleFactorChanged,
@@ -19,6 +19,7 @@ use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
 
 use crate::{
     context::SdlContext,
+    converters::{keycode_from_sdl, scancode_from_sdl},
     monitors::{self, SyncMonitorsParams},
     runner::RequestBreakAppLoop,
 };
@@ -70,34 +71,32 @@ pub(crate) fn handle_sdl_event(
             window_id,
             keycode,
             scancode,
-            keymod,
+            keymod: _,
             repeat,
-            which,
-            raw,
+            which: _,
+            raw: _,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let entity = windows
-                    .get_window_entity(window_id)
-                    .expect("Window entity not found");
-                let Some(key_code) = scancode.and_then(convert_sdl_scancode) else {
-                    return;
-                };
-                let Some(logical_key) = keycode.and_then(convert_sdl_keycode) else {
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::KeyboardInput(
-                    bevy_input::keyboard::KeyboardInput {
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some((entity, key_code, logical_key)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    let key_code = scancode.map(scancode_from_sdl)?;
+                    let logical_key = keycode.map(keycode_from_sdl)?;
+                    Some((entity, key_code, logical_key))
+                })
+            {
+                bevy_window_events.push(
+                    KeyboardInput {
                         key_code,
                         logical_key,
-                        state: bevy_input::ButtonState::Pressed,
-                        text: None,
-                        repeat,
+                        state: ButtonState::Pressed,
+                        text: None, // TODO: Try to translate this event to text?
+                        repeat: *repeat,
                         window: entity,
-                    },
-                ));
-            });
-            */
+                    }
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::KeyUp {
@@ -105,34 +104,32 @@ pub(crate) fn handle_sdl_event(
             window_id,
             keycode,
             scancode,
-            keymod,
+            keymod: _,
             repeat,
-            which,
-            raw,
+            which: _,
+            raw: _,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let entity = windows
-                    .get_window_entity(window_id)
-                    .expect("Window entity not found");
-                let Some(key_code) = scancode.and_then(convert_sdl_scancode) else {
-                    return;
-                };
-                let Some(logical_key) = keycode.and_then(convert_sdl_keycode) else {
-                    return;
-                };
-                bevy_window_events.push(bevy_window::WindowEvent::KeyboardInput(
-                    bevy_input::keyboard::KeyboardInput {
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some((entity, key_code, logical_key)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    let key_code = scancode.map(scancode_from_sdl)?;
+                    let logical_key = keycode.map(keycode_from_sdl)?;
+                    Some((entity, key_code, logical_key))
+                })
+            {
+                bevy_window_events.push(
+                    KeyboardInput {
                         key_code,
                         logical_key,
-                        state: bevy_input::ButtonState::Released,
-                        text: None,
-                        repeat,
+                        state: ButtonState::Released,
+                        text: None, // TODO: Try to translate this event to text?
+                        repeat: *repeat,
                         window: entity,
-                    },
-                ));
-            });
-            */
+                    }
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::TextEditing {

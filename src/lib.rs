@@ -1,8 +1,8 @@
 /*
  *  TODO:
+ *  - Do we need to release input when focus is lost?
  *  - in bevy_winit/src/state.rs look at:
  *      - fn window_event
- *          - KeyboardInput
  *          - MouseInput
  *          - PinchGesture
  *          - RotationGesture
@@ -18,7 +18,6 @@
  *          - Destroyed
  *  - in bevy_winit/src/system.rs look at:
  *      - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)
- *      - fn check_keyboard_focus_lost
  *      - fn changed_windows
  *      - fn changed_cursor_options
  *      - Understand why ... exists:
