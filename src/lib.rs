@@ -4,7 +4,6 @@
  *      - fn window_event
  *          - ScaleFactorChanged
  *          - KeyboardInput
- *          - CursorMoved
  *          - MouseInput
  *          - PinchGesture
  *          - RotationGesture
@@ -18,8 +17,6 @@
  *          - Ime
  *          - ThemeChanged
  *          - Destroyed
- *      - fn device_event
- *          - MouseMotion
  *      - fn react_to_scale_factor_change
  *  - in bevy_winit/src/system.rs look at:
  *      - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)

@@ -1,8 +1,9 @@
 use bevy_ecs::{entity::Entity, message::Message, world::World};
-use bevy_math::IVec2;
+use bevy_input::mouse::MouseMotion;
+use bevy_math::{DVec2, IVec2, Vec2};
 use bevy_window::{
-    CursorEntered, CursorLeft, Window, WindowCloseRequested, WindowEvent, WindowFocused,
-    WindowMoved, WindowOccluded, WindowResized,
+    CursorEntered, CursorLeft, CursorMoved, Window, WindowCloseRequested, WindowEvent,
+    WindowFocused, WindowMoved, WindowOccluded, WindowResized,
 };
 
 use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
@@ -163,44 +164,46 @@ pub(crate) fn handle_sdl_event(
         SdlEvent::MouseMotion {
             timestamp: _,
             window_id,
-            which,
-            mousestate,
+            which: _,
+            mousestate: _,
             x,
             y,
             xrel,
             yrel,
         } => {
-            /*
-            bevy_window_events.push(bevy_window::WindowEvent::MouseMotion(
-                bevy_input::mouse::MouseMotion {
-                    delta: Vec2::new(xrel as f32, yrel as f32),
-                },
-            ));
-            SDL_WINDOWS.with_borrow(|windows| {
-                let Some(entity) = windows.get_window_entity(window_id) else {
-                    return;
-                };
-                let Some(mut win) = app.world_mut().get_mut::<bevy_window::Window>(entity) else {
-                    return;
-                };
-                let physical_position = DVec2::new(x as f64, y as f64);
+            let delta = Vec2::new(*xrel as f32, *yrel as f32);
+            bevy_window_events.push(MouseMotion { delta }.into());
 
-                let last_position = win.physical_cursor_position();
-                let delta = last_position.map(|last_pos| {
-                    (physical_position.as_vec2() - last_pos) / win.resolution.scale_factor()
-                });
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some((entity, cursor_position, cursor_delta)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    try_with_window(world, entity, |window| {
+                        let physical_position = DVec2::new(*x as f64, *y as f64);
 
-                win.set_physical_cursor_position(Some(physical_position));
-                let position = (physical_position / win.resolution.scale_factor() as f64).as_vec2();
-                bevy_window_events.push(bevy_window::WindowEvent::CursorMoved(
-                    bevy_window::CursorMoved {
-                        delta,
+                        let last_position = window.physical_cursor_position();
+                        let delta = last_position.map(|last_pos| {
+                            (physical_position.as_vec2() - last_pos)
+                                / window.resolution.scale_factor()
+                        });
+
+                        window.set_physical_cursor_position(Some(physical_position));
+                        let position =
+                            (physical_position / window.resolution.scale_factor() as f64).as_vec2();
+
+                        (entity, position, delta)
+                    })
+                })
+            {
+                bevy_window_events.push(
+                    CursorMoved {
                         window: entity,
-                        position,
-                    },
-                ));
-            });
-            */
+                        position: cursor_position,
+                        delta: cursor_delta,
+                    }
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::MouseButtonDown {
@@ -636,19 +639,6 @@ pub fn handle_sdl_window_event(
     sdl_window_event: SdlWindowEvent,
     bevy_window_events: &mut Vec<WindowEvent>,
 ) {
-    fn try_with_window<F, R>(world: &mut World, entity: Entity, f: F) -> Option<R>
-    where
-        F: FnOnce(&mut Window) -> R,
-    {
-        if let Ok(mut entity_mut) = world.get_entity_mut(entity)
-            && let Some(mut window) = entity_mut.get_mut::<Window>()
-        {
-            return Some(f(&mut window));
-        }
-
-        None
-    }
-
     match sdl_window_event {
         SdlWindowEvent::None => (),
 
@@ -868,5 +858,22 @@ pub(crate) fn forward_bevy_window_events(world: &mut World, window_events: Vec<W
 
     if !window_events.is_empty() {
         world.write_message_batch(window_events);
+    }
+}
+
+//==================================================================================================
+// Helpers
+//==================================================================================================
+
+fn try_with_window<F, R>(world: &mut World, entity: Entity, f: F) -> Option<R>
+where
+    F: FnOnce(&mut Window) -> R,
+{
+    if let Ok(mut entity_mut) = world.get_entity_mut(entity)
+        && let Some(mut window) = entity_mut.get_mut::<Window>()
+    {
+        Some(f(&mut window))
+    } else {
+        None
     }
 }
