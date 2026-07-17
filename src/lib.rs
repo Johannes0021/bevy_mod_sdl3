@@ -1,13 +1,13 @@
 /*
  * TODO:
  * - Do we need to release input when focus is lost?
+ * - Does sdl3 support SdlEvent::MouseWheel MouseScrollUnit::Pixel?
  * - in bevy_winit/src/state.rs look at:
  *     - fn window_event
  *         - PinchGesture
  *         - RotationGesture
  *         - DoubleTapGesture
  *         - PanGesture
- *         - MouseWheel
  *         - Touch
  *         - DroppedFile
  *         - HoveredFile
@@ -33,7 +33,7 @@ pub use windows::*;
 
 pub use sdl3;
 
-use bevy_app::{App, Last, /*OnAppExitSystems,*/ Plugin};
+use bevy_app::{App, Last, Plugin};
 use bevy_ecs::{
     change_detection::NonSendMut, lifecycle::Add, observer::On, schedule::IntoScheduleConfigs,
 };
@@ -61,8 +61,7 @@ impl Plugin for Sdl3Plugin {
                 (
                     //changed_windows,
                     //changed_cursor_options,
-                    despawn_windows.after(ExitSystems), //.after(OnAppExitSystems),
-                                                        //check_keyboard_focus_lost,
+                    despawn_windows.after(ExitSystems), /* TODO: .after(OnAppExitSystems), */
                 )
                     .chain(),
             )

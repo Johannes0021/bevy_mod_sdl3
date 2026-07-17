@@ -10,7 +10,8 @@ use bevy_ecs::{
 use bevy_input::{
     ButtonState,
     keyboard::KeyboardInput,
-    mouse::{MouseButtonInput, MouseMotion},
+    mouse::{MouseButtonInput, MouseMotion, MouseScrollUnit, MouseWheel},
+    touch::TouchPhase,
 };
 use bevy_math::{DVec2, IVec2, Vec2};
 use bevy_window::{
@@ -279,30 +280,28 @@ pub(crate) fn handle_sdl_event(
         SdlEvent::MouseWheel {
             timestamp: _,
             window_id,
-            which,
+            which: _,
             x,
             y,
-            direction,
-            mouse_x,
-            mouse_y,
-            integer_x,
-            integer_y,
+            direction: _, // TODO: Do we have to take this into account?
+            mouse_x: _,
+            mouse_y: _,
+            integer_x: _,
+            integer_y: _,
         } => {
-            /*
-            SDL_WINDOWS.with_borrow(|windows| {
-                let entity = windows
-                    .get_window_entity(window_id)
-                    .expect("Window entity not found");
-                bevy_window_events.push(bevy_window::WindowEvent::MouseWheel(
-                    bevy_input::mouse::MouseWheel {
-                        unit: bevy_input::mouse::MouseScrollUnit::Line,
-                        x: precise_x,
-                        y: precise_y,
+            let sdl_context = world.non_send_mut::<SdlContext>();
+            if let Some(entity) = sdl_context.get_window_entity((*window_id).into()) {
+                bevy_window_events.push(
+                    MouseWheel {
+                        unit: MouseScrollUnit::Line,
+                        x: *x,
+                        y: *y,
                         window: entity,
-                    },
-                ));
-            });
-            */
+                        phase: TouchPhase::Moved,
+                    }
+                    .into(),
+                );
+            }
         }
 
         SdlEvent::JoyAxisMotion {
