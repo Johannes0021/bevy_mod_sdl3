@@ -166,31 +166,31 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
             }
 
             break_after_next_app_loop = true;
-        }
-
-        let frame_rate = if suspended {
-            SUSPENDED_FRAME_RATE
         } else {
-            let mut focused_windows_state: SystemState<(Res<SdlSettings>, Query<&Window>)> =
-                SystemState::new(app.world_mut());
-            let (settings, windows) = focused_windows_state.get(app.world()).unwrap();
-            let focused = windows.iter().any(|window| window.focused);
-
-            if focused {
-                settings.focused
+            let frame_rate = if suspended {
+                SUSPENDED_FRAME_RATE
             } else {
-                settings.unfocused
-            }
-        };
-        match frame_rate {
-            FrameRate::Uncapped => {}
+                let mut focused_windows_state: SystemState<(Res<SdlSettings>, Query<&Window>)> =
+                    SystemState::new(app.world_mut());
+                let (settings, windows) = focused_windows_state.get(app.world()).unwrap();
+                let focused = windows.iter().any(|window| window.focused);
 
-            FrameRate::Limited { frame_time } => {
-                let elapsed = frame_start.elapsed();
+                if focused {
+                    settings.focused
+                } else {
+                    settings.unfocused
+                }
+            };
+            match frame_rate {
+                FrameRate::Uncapped => {}
 
-                if elapsed < frame_time {
-                    let remaining = frame_time - elapsed;
-                    thread::sleep(remaining);
+                FrameRate::Limited { frame_time } => {
+                    let elapsed = frame_start.elapsed();
+
+                    if elapsed < frame_time {
+                        let remaining = frame_time - elapsed;
+                        thread::sleep(remaining);
+                    }
                 }
             }
         }
