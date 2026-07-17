@@ -1,30 +1,31 @@
 /*
- *  TODO:
- *  - Do we need to release input when focus is lost?
- *  - in bevy_winit/src/state.rs look at:
- *      - fn window_event
- *          - MouseInput
- *          - PinchGesture
- *          - RotationGesture
- *          - DoubleTapGesture
- *          - PanGesture
- *          - MouseWheel
- *          - Touch
- *          - DroppedFile
- *          - HoveredFile
- *          - HoveredFileCancelled
- *          - Ime
- *          - ThemeChanged
- *          - Destroyed
- *  - in bevy_winit/src/system.rs look at:
- *      - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)
- *      - fn changed_windows
- *      - fn changed_cursor_options
- *      - Understand why ... exists:
- *          - CachedWindow
- *          - CachedCursorOptions
- *          - WinitWindowPressedKeys
- *  - Bevy relies on AndroidApp from android-activity crate to access the AssetManager.
+ * TODO:
+ * - Do we need to release input when focus is lost?
+ * - in bevy_winit/src/state.rs look at:
+ *     - fn window_event
+ *         - MouseInput
+ *         - PinchGesture
+ *         - RotationGesture
+ *         - DoubleTapGesture
+ *         - PanGesture
+ *         - MouseWheel
+ *         - Touch
+ *         - DroppedFile
+ *         - HoveredFile
+ *         - HoveredFileCancelled
+ *         - Ime
+ *         - ThemeChanged
+ *         - Destroyed
+ * - in bevy_winit/src/system.rs look at:
+ *     - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)
+ *     - fn changed_windows
+ *     - fn changed_cursor_options
+ *     - Understand why ... exists:
+ *         - CachedWindow
+ *         - CachedCursorOptions
+ * - Bevy relies on AndroidApp from android-activity crate to access the AssetManager.
+ * - Impl bevy_winit/src/cursor/mod.rs
+ * - Impl bevy_winit/src/accessibility.rs
  */
 pub use context::*;
 pub use event::RawSdlEvent;

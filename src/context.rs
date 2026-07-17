@@ -80,16 +80,6 @@ impl SdlContext {
 }
 
 //==================================================================================================
-// SdlWindowPressedKeys
-//==================================================================================================
-
-/// This keeps track of which keys are pressed on each window.
-/// When a window is unfocused, this is used to send key release events for all the currently held
-/// keys.
-#[derive(Default, Component)]
-pub struct SdlWindowPressedKeys(pub(crate) HashMap<KeyCode, Key>);
-
-//==================================================================================================
 // CachedWindow
 //==================================================================================================
 
@@ -158,7 +148,6 @@ pub fn spawn_windows(
         commands.entity(entity).insert((
             CachedWindow(window.clone()),
             CachedCursorOptions(cursor_options.clone()),
-            SdlWindowPressedKeys::default(),
         ));
 
         if let Ok(handle_wrapper) = RawHandleWrapper::new(sdl_window) {
