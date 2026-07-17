@@ -62,15 +62,15 @@ pub(crate) fn handle_sdl_event(
             return RequestBreakAppLoop(true);
         }
 
-        SdlEvent::AppLowMemory { timestamp: _ } => {}
+        SdlEvent::AppLowMemory { timestamp: _ } => {} // TODO?
 
-        SdlEvent::AppWillEnterBackground { timestamp: _ } => (),
+        SdlEvent::AppWillEnterBackground { timestamp: _ } => (), // TODO!!!
 
-        SdlEvent::AppDidEnterBackground { timestamp: _ } => (),
+        SdlEvent::AppDidEnterBackground { timestamp: _ } => (), // TODO!!!
 
-        SdlEvent::AppWillEnterForeground { timestamp: _ } => (),
+        SdlEvent::AppWillEnterForeground { timestamp: _ } => (), // TODO!!!
 
-        SdlEvent::AppDidEnterForeground { timestamp: _ } => (),
+        SdlEvent::AppDidEnterForeground { timestamp: _ } => (), // TODO!!!
 
         SdlEvent::Window {
             timestamp: _,
@@ -198,7 +198,7 @@ pub(crate) fn handle_sdl_event(
             xrel,
             yrel,
         } => {
-            let delta = Vec2::new(*xrel as f32, *yrel as f32);
+            let delta = Vec2::new(*xrel, *yrel);
             bevy_window_events.push(MouseMotion { delta }.into());
 
             let sdl_context = world.non_send::<SdlContext>();
@@ -316,90 +316,35 @@ pub(crate) fn handle_sdl_event(
             }
         }
 
-        SdlEvent::JoyAxisMotion {
-            timestamp,
-            which,
-            axis_idx,
-            value,
-        } => (),
+        SdlEvent::JoyAxisMotion { .. } => (), // TODO
 
-        SdlEvent::JoyHatMotion {
-            timestamp,
-            which,
-            hat_idx,
-            state,
-        } => (),
+        SdlEvent::JoyHatMotion { .. } => (), // TODO
 
-        SdlEvent::JoyButtonDown {
-            timestamp,
-            which,
-            button_idx,
-        } => (),
+        SdlEvent::JoyButtonDown { .. } => (), // TODO
 
-        SdlEvent::JoyButtonUp {
-            timestamp,
-            which,
-            button_idx,
-        } => (),
+        SdlEvent::JoyButtonUp { .. } => (), // TODO
 
-        SdlEvent::JoyDeviceAdded { timestamp, which } => (),
+        SdlEvent::JoyDeviceAdded { .. } => (), // TODO
 
-        SdlEvent::JoyDeviceRemoved { timestamp, which } => (),
+        SdlEvent::JoyDeviceRemoved { .. } => (), // TODO
 
-        SdlEvent::ControllerAxisMotion {
-            timestamp,
-            which,
-            axis,
-            value,
-        } => (),
+        SdlEvent::ControllerAxisMotion { .. } => (), // TODO
 
-        SdlEvent::ControllerButtonDown {
-            timestamp,
-            which,
-            button,
-        } => (),
+        SdlEvent::ControllerButtonDown { .. } => (), // TODO
 
-        SdlEvent::ControllerButtonUp {
-            timestamp,
-            which,
-            button,
-        } => (),
+        SdlEvent::ControllerButtonUp { .. } => (), // TODO
 
-        SdlEvent::ControllerDeviceAdded { timestamp, which } => (),
+        SdlEvent::ControllerDeviceAdded { .. } => (), // TODO
 
-        SdlEvent::ControllerDeviceRemoved { timestamp, which } => (),
+        SdlEvent::ControllerDeviceRemoved { .. } => (), // TODO
 
-        SdlEvent::ControllerDeviceRemapped { timestamp, which } => (),
+        SdlEvent::ControllerDeviceRemapped { .. } => (), // TODO
 
-        SdlEvent::ControllerTouchpadDown {
-            timestamp,
-            which,
-            touchpad,
-            finger,
-            x,
-            y,
-            pressure,
-        } => (),
+        SdlEvent::ControllerTouchpadDown { .. } => (), // TODO
 
-        SdlEvent::ControllerTouchpadMotion {
-            timestamp,
-            which,
-            touchpad,
-            finger,
-            x,
-            y,
-            pressure,
-        } => (),
+        SdlEvent::ControllerTouchpadMotion { .. } => (), // TODO
 
-        SdlEvent::ControllerTouchpadUp {
-            timestamp,
-            which,
-            touchpad,
-            finger,
-            x,
-            y,
-            pressure,
-        } => (),
+        SdlEvent::ControllerTouchpadUp { .. } => (), // TODO
 
         SdlEvent::FingerDown {
             timestamp: _,
@@ -600,98 +545,41 @@ pub(crate) fn handle_sdl_event(
             }
         }
 
-        SdlEvent::AudioDeviceAdded {
-            timestamp,
-            which,
-            iscapture,
+        SdlEvent::AudioDeviceAdded { .. } => (), // TODO
+
+        SdlEvent::AudioDeviceRemoved { .. } => (), // TODO
+
+        SdlEvent::PenProximityIn { .. } => (), // TODO
+
+        SdlEvent::PenProximityOut { .. } => (), // TODO
+
+        // TODO: Consider handling this as pointer input?
+        SdlEvent::PenDown { .. } => (),
+
+        // TODO: Consider handling this as pointer input?
+        SdlEvent::PenUp { .. } => (),
+
+        // TODO: Consider handling this as pointer input?
+        SdlEvent::PenMotion { .. } => (),
+
+        // TODO: Consider handling this as pointer input?
+        SdlEvent::PenButtonUp { .. } => (),
+
+        // TODO: Consider handling this as pointer input?
+        SdlEvent::PenButtonDown { .. } => (),
+
+        SdlEvent::PenAxis { .. } => (), // TODO
+
+        SdlEvent::RenderTargetsReset { .. } => (), // TODO?
+
+        SdlEvent::RenderDeviceReset { .. } => (), // TODO?
+
+        SdlEvent::User { .. } => (), // TODO?
+
+        SdlEvent::Unknown {
+            timestamp: _,
+            type_: _,
         } => (),
-
-        SdlEvent::AudioDeviceRemoved {
-            timestamp,
-            which,
-            iscapture,
-        } => (),
-
-        SdlEvent::PenProximityIn {
-            timestamp,
-            which,
-            window,
-        } => (),
-
-        SdlEvent::PenProximityOut {
-            timestamp,
-            which,
-            window,
-        } => (),
-
-        SdlEvent::PenDown {
-            timestamp,
-            which,
-            window,
-            x,
-            y,
-            eraser,
-        } => (),
-
-        SdlEvent::PenUp {
-            timestamp,
-            which,
-            window,
-            x,
-            y,
-            eraser,
-        } => (),
-
-        SdlEvent::PenMotion {
-            timestamp,
-            which,
-            window,
-            x,
-            y,
-        } => (),
-
-        SdlEvent::PenButtonUp {
-            timestamp,
-            which,
-            window,
-            x,
-            y,
-            button,
-        } => (),
-
-        SdlEvent::PenButtonDown {
-            timestamp,
-            which,
-            window,
-            x,
-            y,
-            button,
-        } => (),
-
-        SdlEvent::PenAxis {
-            timestamp,
-            which,
-            window,
-            x,
-            y,
-            axis,
-            value,
-        } => (),
-
-        SdlEvent::RenderTargetsReset { timestamp } => (),
-
-        SdlEvent::RenderDeviceReset { timestamp } => (),
-
-        SdlEvent::User {
-            timestamp,
-            window_id,
-            type_,
-            code,
-            data1,
-            data2,
-        } => (),
-
-        SdlEvent::Unknown { timestamp, type_ } => (),
 
         SdlEvent::Display {
             timestamp: _,
