@@ -66,10 +66,6 @@ pub(crate) struct SdlWindows {
 }
 
 impl SdlWindows {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn create(
         &mut self,
         video: &SdlVideoSubsystem,

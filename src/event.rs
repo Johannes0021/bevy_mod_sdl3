@@ -413,25 +413,9 @@ pub(crate) fn handle_sdl_event(
             }
         }
 
-        SdlEvent::DollarRecord {
-            timestamp,
-            touch_id,
-            gesture_id,
-            num_fingers,
-            error,
-            x,
-            y,
-        } => (),
+        SdlEvent::DollarRecord { .. } => (), // TODO
 
-        SdlEvent::MultiGesture {
-            timestamp,
-            touch_id,
-            d_theta,
-            d_dist,
-            x,
-            y,
-            num_fingers,
-        } => (),
+        SdlEvent::MultiGesture { .. } => (), // TODO
 
         SdlEvent::ClipboardUpdate { timestamp: _ } => (),
 

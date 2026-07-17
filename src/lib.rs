@@ -1,6 +1,7 @@
 /*
  * TODO:
  *  - Bevy relies on AndroidApp from android-activity crate to access the AssetManager.
+ *  - Frame pacing option (without VSync (Impl bevy_winit/src/winit_config.rs))
  *  - Do we need to release input when focus is lost?
  *  - Does sdl3 support SdlEvent::MouseWheel MouseScrollUnit::Pixel?
  *      - In bevy_winit/src/state.rs look at: WindowEvent::MouseWheel
