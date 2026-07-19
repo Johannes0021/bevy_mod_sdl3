@@ -2,14 +2,20 @@ use std::{collections::HashMap, marker::PhantomData};
 
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::entity::{Entity, EntityHashMap};
-use bevy_window::{CursorGrabMode, Window, WindowWrapper};
+use bevy_log::{debug, error};
+use bevy_window::{
+    CursorGrabMode, CursorOptions, Window, WindowMode, WindowPosition, WindowWrapper,
+};
 use raw_window_handle::{
     DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, WindowHandle,
 };
 
-use sdl3::{VideoSubsystem as SdlVideoSubsystem, video::Window as SdlWindow};
+use sdl3::{
+    VideoSubsystem as SdlVideoSubsystem, mouse::MouseUtil as SdlMouseUtil,
+    video::Window as SdlWindow,
+};
 
-use crate::monitors::SdlMonitors;
+use crate::monitors::{SdlDisplayModeExt, SdlMonitors, get_refresh_rate_millihertz};
 
 //==================================================================================================
 // WindowId
@@ -69,22 +75,164 @@ impl SdlWindows {
     pub fn create(
         &mut self,
         video: &SdlVideoSubsystem,
+        mouse: &SdlMouseUtil,
         entity: Entity,
-        bevy_window: &Window,
+        window: &Window,
+        cursor_options: &CursorOptions,
         sdl_monitors: &SdlMonitors,
     ) -> &WindowWrapper<SdlWindowWrapper> {
-        let sdl_window = video
-            .window(
-                bevy_window.name.as_ref().unwrap_or(&"Bevy".to_string()),
-                bevy_window.width() as u32,
-                bevy_window.height() as u32,
-            )
-            .position_centered()
-            .resizable()
-            .metal_view()
-            .build()
-            .map_err(|e| e.to_string())
-            .unwrap();
+        let mut sdl_window_builder = video.window(
+            window.name.as_ref().unwrap_or(&"Bevy".to_string()),
+            window.width() as u32,
+            window.height() as u32,
+        );
+
+        let (monitor_selection, video_mode_selection, fullscreen) = match window.mode {
+            WindowMode::Windowed => {
+                let monitor_selection = match window.position {
+                    WindowPosition::Automatic => {
+                        sdl_window_builder.position_centered();
+                        None
+                    }
+
+                    WindowPosition::Centered(monitor_selection) => {
+                        sdl_window_builder.position_centered();
+                        Some(monitor_selection)
+                    }
+
+                    WindowPosition::At(position) => {
+                        sdl_window_builder.position(position.x, position.y);
+                        None
+                    }
+                };
+
+                (monitor_selection, None, false)
+            }
+
+            WindowMode::BorderlessFullscreen(monitor_selection) => {
+                (Some(monitor_selection), None, true)
+            }
+
+            WindowMode::Fullscreen(monitor_selection, video_mode_selection) => {
+                (Some(monitor_selection), Some(video_mode_selection), true)
+            }
+        };
+
+        if fullscreen {
+            sdl_window_builder.fullscreen();
+        }
+
+        if window.resizable {
+            sdl_window_builder.resizable();
+        }
+
+        if !window.decorations {
+            sdl_window_builder.borderless();
+        }
+
+        let mut sdl_window = sdl_window_builder.metal_view().build().unwrap();
+
+        let constraints = window.resize_constraints.check_constraints();
+        if let Err(e) =
+            sdl_window.set_minimum_size(constraints.min_width as u32, constraints.min_height as u32)
+        {
+            error!(
+                "Failed to set minimum size for window {} (min_width: {}, min_height: {}): {e}",
+                window.title, constraints.min_width as u32, constraints.min_height as u32,
+            );
+        }
+
+        if constraints.max_width.is_finite()
+            && constraints.max_height.is_finite()
+            && let Err(e) = sdl_window
+                .set_maximum_size(constraints.max_width as u32, constraints.max_height as u32)
+        {
+            error!(
+                "Failed to set maximum size for window {} \
+                (max_width: {}, max_height: {}): {e}",
+                window.title, constraints.max_width as u32, constraints.max_height as u32,
+            );
+        }
+
+        if monitor_selection.is_some() || video_mode_selection.is_some() {
+            let display_mode = sdl_window
+                .display_mode()
+                .ok_or_else(|| {
+                    "Failed to update window mode: Couldn't get the display mode".to_string()
+                })
+                .and_then(|mut dm| {
+                    if let Some(monitor_selection) = monitor_selection {
+                        dm.select_monitor(video, sdl_monitors, &monitor_selection)?;
+                    }
+                    Ok(dm)
+                })
+                .and_then(|mut dm| {
+                    if let Some(video_mode_selection) = video_mode_selection {
+                        dm.select_video_mode(&video_mode_selection)?;
+                    }
+                    Ok(dm)
+                });
+
+            if let Err(e) = display_mode.map(|dm| sdl_window.set_display_mode(dm)) {
+                error!(
+                    "Failed to update display mode for window {}: {e}",
+                    window.title
+                );
+            }
+        }
+
+        if window.focused && !sdl_window.raise() {
+            error!("Failed to raise the window {}", window.title);
+        }
+
+        // Do not set the grab mode on window creation if it's none. It can fail on mobile.
+        if cursor_options.grab_mode != CursorGrabMode::None
+            && let Err(e) = sdl_window.attempt_grab(cursor_options.grab_mode)
+        {
+            error!(
+                "Could not set cursor grab mode for window {}: {}",
+                window.title, e
+            );
+        }
+
+        if sdl_window.has_mouse_focus() && cursor_options.visible != mouse.is_cursor_showing() {
+            mouse.show_cursor(cursor_options.visible);
+        }
+
+        if let Some(display_mode) = sdl_window.display_mode() {
+            let display_info = DisplayInfo {
+                window_physical_resolution: (
+                    window.resolution.physical_width(),
+                    window.resolution.physical_height(),
+                ),
+                window_logical_resolution: (window.resolution.width(), window.resolution.height()),
+                monitor_name: display_mode.display.get_name().ok(),
+                scale_factor: Some(sdl_window.display_scale() as f64),
+                refresh_rate_millihertz: get_refresh_rate_millihertz(&display_mode),
+            };
+            debug!("{display_info}");
+        } else {
+            match sdl_window.get_display() {
+                Ok(display) => {
+                    let display_info = DisplayInfo {
+                        window_physical_resolution: (
+                            window.resolution.physical_width(),
+                            window.resolution.physical_height(),
+                        ),
+                        window_logical_resolution: (
+                            window.resolution.width(),
+                            window.resolution.height(),
+                        ),
+                        monitor_name: display.get_name().ok(),
+                        scale_factor: Some(sdl_window.display_scale() as f64),
+                        refresh_rate_millihertz: None,
+                    };
+                    debug!("{display_info}");
+                }
+
+                Err(e) => error!("Failed to get display from window {}: {e}", window.title),
+            }
+        }
 
         let id = WindowId(sdl_window.id());
 
@@ -138,6 +286,45 @@ impl SdlWindowExt for SdlWindow {
             }
         }
 
+        Ok(())
+    }
+}
+
+//==================================================================================================
+// SdlWindowExt
+//==================================================================================================
+
+struct DisplayInfo {
+    window_physical_resolution: (u32, u32),
+    window_logical_resolution: (f32, f32),
+    monitor_name: Option<String>,
+    scale_factor: Option<f64>,
+    refresh_rate_millihertz: Option<u32>,
+}
+
+impl core::fmt::Display for DisplayInfo {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "Display information:")?;
+        write!(
+            f,
+            "  Window physical resolution: {}x{}",
+            self.window_physical_resolution.0, self.window_physical_resolution.1
+        )?;
+        write!(
+            f,
+            "  Window logical resolution: {}x{}",
+            self.window_logical_resolution.0, self.window_logical_resolution.1
+        )?;
+        write!(
+            f,
+            "  Monitor name: {}",
+            self.monitor_name.as_deref().unwrap_or("")
+        )?;
+        write!(f, "  Scale factor: {}", self.scale_factor.unwrap_or(0.))?;
+        let millihertz = self.refresh_rate_millihertz.unwrap_or(0);
+        let hertz = millihertz / 1000;
+        let extra_millihertz = millihertz % 1000;
+        write!(f, "  Refresh rate (Hz): {hertz}.{extra_millihertz:03}")?;
         Ok(())
     }
 }

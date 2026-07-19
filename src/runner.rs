@@ -37,7 +37,8 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
         app.cleanup();
     }
 
-    let mut break_after_next_app_loop = false;
+    let mut startup_forced_updates = 5;
+    let mut break_app_loop = false;
     let mut init_monitor_sync = false;
     let mut suspended = false;
 
@@ -154,18 +155,24 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
 
         if !suspended {
             app.update();
+
+            if startup_forced_updates > 0 {
+                startup_forced_updates -= 1;
+            }
         }
 
         suspended = iter_state.suspend;
 
-        if break_after_next_app_loop {
-            break 'app_loop;
+        if break_app_loop {
+            if startup_forced_updates == 0 {
+                break 'app_loop;
+            }
         } else if iter_state.break_app_loop || app.should_exit().is_some() {
             if app.should_exit().is_none() {
                 app.world_mut().write_message(AppExit::Success);
             }
 
-            break_after_next_app_loop = true;
+            break_app_loop = true;
         } else {
             let frame_rate = if suspended {
                 SUSPENDED_FRAME_RATE

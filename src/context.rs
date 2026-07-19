@@ -76,11 +76,18 @@ impl SdlContext {
     pub(crate) fn create_window(
         &mut self,
         entity: Entity,
-        bevy_window: &Window,
+        window: &Window,
+        cursor_options: &CursorOptions,
         sdl_monitors: &SdlMonitors,
     ) -> &WindowWrapper<SdlWindowWrapper> {
-        self.windows
-            .create(&self.video, entity, bevy_window, sdl_monitors)
+        self.windows.create(
+            &self.video,
+            &self.mouse,
+            entity,
+            window,
+            cursor_options,
+            sdl_monitors,
+        )
     }
 
     pub(crate) fn destroy_window(
@@ -156,7 +163,7 @@ pub fn create_windows(
 
         info!("Creating new window {} ({})", window.title.as_str(), entity);
 
-        let sdl_window = sdl_context.create_window(entity, &window, &sdl_monitors);
+        let sdl_window = sdl_context.create_window(entity, &window, cursor_options, &sdl_monitors);
 
         if let Some(theme) = theme_from_sdl(SdlVideoSubsystem::get_system_theme()) {
             window.window_theme = Some(theme);

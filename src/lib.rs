@@ -15,8 +15,6 @@
  *          - DoubleTapGesture
  *          - PanGesture
  *          - WindowEvent::Ime
- * - in bevy_winit/src/system.rs look at:
- *     - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)
  * - Impl bevy_winit/src/cursor/mod.rs
  * - Impl bevy_winit/src/accessibility.rs
  */
