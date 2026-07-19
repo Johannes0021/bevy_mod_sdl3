@@ -14,3 +14,9 @@ bevy_math = "0.19.0"
 bevy_window = "0.19.0"
 sdl3 = { version = "0.18.4", features = ["raw-window-handle"] }
 raw-window-handle = "0.6.2"
+
+[dev-dependencies]
+bevy = "0.19.0"
+
+[[example]]
+name = "hello_world"
