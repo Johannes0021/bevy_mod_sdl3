@@ -14,6 +14,9 @@ I ran into issues with winit on both platforms that I couldn't resolve or ignore
 
 # Build
 
+## PC
+- See https://github.com/vhspace/sdl3-rs
+
 ## Android
 - Follow the guide on https://github.com/libsdl-org/SDL/blob/main/docs/README-android.md
 - Build lib with `crate-type = ["cdylib"]`
