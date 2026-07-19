@@ -17,11 +17,6 @@
  *          - WindowEvent::Ime
  * - in bevy_winit/src/system.rs look at:
  *     - fn create_window (incomplete look at crate::windows::SdlWindows::create_window)
- *     - fn changed_windows
- *     - fn changed_cursor_options
- *     - Understand why ... exists:
- *          - CachedWindow
- *          - CachedCursorOptions
  * - Impl bevy_winit/src/cursor/mod.rs
  * - Impl bevy_winit/src/accessibility.rs
  */
@@ -61,8 +56,8 @@ impl Plugin for Sdl3Plugin {
             .add_systems(
                 Last,
                 (
-                    //changed_windows,
-                    //changed_cursor_options,
+                    changed_windows,
+                    changed_cursor_options,
                     destroy_windows.after(ExitSystems), /* TODO: .after(OnAppExitSystems), */
                 )
                     .chain(),

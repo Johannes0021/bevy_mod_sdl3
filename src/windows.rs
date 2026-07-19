@@ -2,7 +2,7 @@ use std::{collections::HashMap, marker::PhantomData};
 
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::entity::{Entity, EntityHashMap};
-use bevy_window::{Window, WindowWrapper};
+use bevy_window::{CursorGrabMode, Window, WindowWrapper};
 use raw_window_handle::{
     DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, WindowHandle,
 };
@@ -109,5 +109,35 @@ impl SdlWindows {
 
     pub fn get_entity(&self, window_id: WindowId) -> Option<Entity> {
         self.sdl_to_entity.get(&window_id).copied()
+    }
+}
+
+//==================================================================================================
+// SdlWindowExt
+//==================================================================================================
+
+pub(crate) trait SdlWindowExt {
+    fn attempt_grab(&mut self, grab_mode: CursorGrabMode) -> Result<(), String>;
+}
+
+impl SdlWindowExt for SdlWindow {
+    fn attempt_grab(&mut self, grab_mode: CursorGrabMode) -> Result<(), String> {
+        match grab_mode {
+            CursorGrabMode::None => {
+                if !self.set_mouse_grab(false) {
+                    return Err("Failed to release mouse grab".to_string());
+                }
+            }
+            CursorGrabMode::Confined => {
+                if !self.set_mouse_grab(true) {
+                    return Err("Failed to grab mouse".to_string());
+                }
+            }
+            CursorGrabMode::Locked => {
+                return Err("CursorGrabMode::Locked is not directly supported by sdl".to_string());
+            }
+        }
+
+        Ok(())
     }
 }

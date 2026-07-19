@@ -6,27 +6,41 @@ use bevy_ecs::{
 };
 use bevy_log::{error_once, info};
 use bevy_math::{IVec2, UVec2};
-use bevy_window::{Monitor, PrimaryMonitor, VideoMode};
+use bevy_window::{Monitor, MonitorSelection, PrimaryMonitor, VideoMode, VideoModeSelection};
 
-use sdl3::video::{Display, DisplayMode};
+use sdl3::{
+    VideoSubsystem as SdlVideoSubsystem,
+    video::{Display as SdlDisplay, DisplayMode as SdlDisplayMode},
+};
 
 use crate::context::SdlContext;
 
 #[derive(Resource, Debug, Default)]
 pub struct SdlMonitors {
-    displays: Vec<(Display, Entity)>,
+    displays: Vec<(SdlDisplay, Entity)>,
 }
 
 impl SdlMonitors {
-    pub fn find_entity(&self, entity: Entity) -> Option<&Display> {
+    pub fn nth(&self, n: usize) -> Option<&SdlDisplay> {
+        self.displays.get(n).map(|(display, _)| display)
+    }
+
+    pub fn find(&self, entity: Entity) -> Option<&SdlDisplay> {
         self.displays
             .iter()
             .find(|(_, e)| *e == entity)
             .map(|(displays, _)| displays)
     }
+
+    pub fn find_entity(&self, display: &SdlDisplay) -> Option<Entity> {
+        self.displays
+            .iter()
+            .find(|(d, _)| d == display)
+            .map(|(_, entity)| *entity)
+    }
 }
 
-pub fn get_refresh_rate_millihertz(mode: &DisplayMode) -> Option<u32> {
+pub fn get_refresh_rate_millihertz(mode: &SdlDisplayMode) -> Option<u32> {
     if mode.refresh_rate_numerator > 0 && mode.refresh_rate_denominator > 0 {
         let numerator = mode.refresh_rate_numerator as u128;
         let denominator = mode.refresh_rate_denominator as u128;
@@ -138,7 +152,7 @@ pub(crate) fn sync_monitors(
     for (entity, _) in old_primary_monitors.iter() {
         let mut remove_marker = true;
 
-        if let Some(display) = sdl_monitors.find_entity(entity)
+        if let Some(display) = sdl_monitors.find(entity)
             && primary_display.as_ref() == Ok(display)
         {
             remove_marker = false;
@@ -151,5 +165,71 @@ pub(crate) fn sync_monitors(
 
     for entity in remove_markers {
         commands.entity(entity).remove::<PrimaryMonitor>();
+    }
+}
+
+//==================================================================================================
+// DisplayModeExt
+//==================================================================================================
+
+pub(crate) trait SdlDisplayModeExt {
+    fn select_monitor(
+        &mut self,
+        video: &SdlVideoSubsystem,
+        monitors: &SdlMonitors,
+        monitor_selection: &MonitorSelection,
+    ) -> Result<(), String>;
+
+    fn select_video_mode(
+        &mut self,
+        video_mode_selection: &VideoModeSelection,
+    ) -> Result<(), String>;
+}
+
+impl SdlDisplayModeExt for SdlDisplayMode {
+    fn select_monitor(
+        &mut self,
+        video: &SdlVideoSubsystem,
+        monitors: &SdlMonitors,
+        monitor_selection: &MonitorSelection,
+    ) -> Result<(), String> {
+        match monitor_selection {
+            MonitorSelection::Current => (),
+            MonitorSelection::Primary => {
+                self.display = video.get_primary_display().map_err(|e| e.to_string())?;
+            }
+            MonitorSelection::Index(i) => {
+                self.display = monitors
+                    .nth(*i)
+                    .copied()
+                    .ok_or("Failed to find monitor with the index {i}")?;
+            }
+            MonitorSelection::Entity(entity) => {
+                self.display = monitors
+                    .find(*entity)
+                    .copied()
+                    .ok_or("Failed to find monitor for entity {entity}")?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn select_video_mode(
+        &mut self,
+        video_mode_selection: &VideoModeSelection,
+    ) -> Result<(), String> {
+        match video_mode_selection {
+            VideoModeSelection::Current => (),
+            VideoModeSelection::Specific(video_mode) => {
+                // TODO: I don't know how to map VideoMode::bit_depth to sdl3::pixels::PixelFormat
+                return Err(format!(
+                    "Selecting specific VideoMode is not implemented yet: {:?}",
+                    video_mode
+                ));
+            }
+        }
+
+        Ok(())
     }
 }
