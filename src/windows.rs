@@ -130,7 +130,11 @@ impl SdlWindows {
             sdl_window_builder.borderless();
         }
 
-        let mut sdl_window = sdl_window_builder.metal_view().build().unwrap();
+        let mut sdl_window = sdl_window_builder
+            .metal_view()
+            .build()
+            .inspect_err(|error| error!("Failed to build SDL window: {error}"))
+            .expect("Failed to build SDL window");
 
         let constraints = window.resize_constraints.check_constraints();
         if let Err(e) =

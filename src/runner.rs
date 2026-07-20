@@ -11,6 +11,8 @@ use bevy_ecs::{
 };
 use bevy_window::{Window, WindowDestroyed};
 
+use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
+
 #[cfg(target_os = "android")]
 use crate::android;
 use crate::{
@@ -24,18 +26,18 @@ const SUSPENDED_FRAME_RATE: FrameRate = FrameRate::Limited {
     frame_time: Duration::from_millis(100),
 };
 
-pub(crate) enum RequestAppLoopState {
-    Continue,
-    SuspendAndContinue,
-    ResumeAndContinue,
-    Break,
-}
+pub(crate) struct RequestAppLoopBreak(pub bool);
 
 pub(crate) fn app_loop(mut app: App) -> AppExit {
     if app.plugins_state() == PluginsState::Ready {
         app.finish();
         app.cleanup();
     }
+
+    let mut event_pump = {
+        let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+        sdl_context.event_pump.take().unwrap()
+    };
 
     let mut startup_forced_updates = 5;
     let mut break_app_loop = false;
@@ -77,44 +79,55 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
             }
         }
 
-        #[derive(Default)]
-        struct IterState {
-            break_app_loop: bool,
-            suspend: bool,
-            #[cfg(target_os = "android")]
-            trigger_surface_destruction: bool,
-        }
-
-        let iter_state = {
-            let mut iter_state = IterState::default();
-            let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
-
+        let (break_app_loop_next_iter, do_app_update) = {
+            let mut break_app_loop_next_iter = false;
+            let mut do_app_update = !suspended;
             let mut bevy_window_events = Vec::new();
-            for window in sdl_context.destroyed_windows.drain(..) {
-                bevy_window_events.push(WindowDestroyed { window }.into());
-            }
 
-            // While testing, I noticed that on iOS the application lifecycle events are only
-            // delivered through the sdl event watch and are not received via
-            // EventPump::poll_iter(). Therefore, lifecycle events are forwarded to the loop thread
-            // through the event channel. There may be a better design, or I may be missing
-            // something.
-            for _ in sdl_context.event_pump.poll_iter() {}
-            let sdl_events: Vec<_> = sdl_context.event_rx.try_iter().collect();
+            let mut sdl_events = Vec::new();
+            'sdl_event_pump_loop: for sdl_event in event_pump.poll_iter() {
+                let RequestAppLoopBreak(request_app_loop_break) =
+                    handle_sdl_event(app.world_mut(), &sdl_event, &mut bevy_window_events);
 
-            for event in &sdl_events {
-                match handle_sdl_event(app.world_mut(), event, &mut bevy_window_events) {
-                    RequestAppLoopState::Continue => (),
-                    RequestAppLoopState::SuspendAndContinue => {
+                break_app_loop_next_iter |= request_app_loop_break;
+
+                if let SdlEvent::Window {
+                    timestamp: _,
+                    window_id: _,
+                    win_event,
+                } = &sdl_event
+                {
+                    if suspended && matches!(win_event, SdlWindowEvent::FocusGained) {
                         #[cfg(target_os = "android")]
                         {
-                            iter_state.trigger_surface_destruction = true;
+                            let mut ensure_surface_exists_state =
+                                SystemState::<android::EnsureSurfaceExistsParams>::from_world(
+                                    app.world_mut(),
+                                );
+                            android::ensure_surface_exists(
+                                ensure_surface_exists_state
+                                    .get_mut(app.world_mut())
+                                    .unwrap(),
+                            );
+                            ensure_surface_exists_state.apply(app.world_mut());
                         }
-                        iter_state.suspend = true;
+
+                        suspended = false;
+                        do_app_update = true;
+                    } else if matches!(win_event, SdlWindowEvent::FocusLost) {
+                        #[cfg(target_os = "android")]
+                        android::trigger_surface_destruction(app.world_mut());
+
+                        suspended = true;
+                        do_app_update = true;
+
+                        // Break and process the events because the loop might stall and die after
+                        // this event, leaving the app with no chance to react.
+                        break 'sdl_event_pump_loop;
                     }
-                    RequestAppLoopState::ResumeAndContinue => iter_state.suspend = false,
-                    RequestAppLoopState::Break => iter_state.break_app_loop = true,
                 }
+
+                sdl_events.push(sdl_event);
             }
 
             if !sdl_events.is_empty() {
@@ -122,38 +135,19 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
                     .write_message_batch(sdl_events.into_iter().map(RawSdlEvent));
             }
 
+            let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+            for window in sdl_context.destroyed_windows.drain(..) {
+                bevy_window_events.push(WindowDestroyed { window }.into());
+            }
+
             if !bevy_window_events.is_empty() {
                 forward_bevy_window_events(app.world_mut(), bevy_window_events);
             }
 
-            #[cfg(target_os = "android")]
-            {
-                iter_state.trigger_surface_destruction |= iter_state.break_app_loop;
-            }
-            iter_state.suspend |= iter_state.break_app_loop;
-
-            iter_state
+            (break_app_loop_next_iter, do_app_update)
         };
 
-        #[cfg(target_os = "android")]
-        {
-            if iter_state.trigger_surface_destruction {
-                android::trigger_surface_destruction(app.world_mut());
-            }
-
-            if suspended && !iter_state.suspend {
-                let mut ensure_surface_exists_state =
-                    SystemState::<android::EnsureSurfaceExistsParams>::from_world(app.world_mut());
-                android::ensure_surface_exists(
-                    ensure_surface_exists_state
-                        .get_mut(app.world_mut())
-                        .unwrap(),
-                );
-                ensure_surface_exists_state.apply(app.world_mut());
-            }
-        }
-
-        if !suspended {
+        if do_app_update {
             app.update();
 
             if startup_forced_updates > 0 {
@@ -161,13 +155,16 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
             }
         }
 
-        suspended = iter_state.suspend;
+        while suspended && (startup_forced_updates > 0) {
+            app.update();
+            startup_forced_updates -= 1;
+        }
 
         if break_app_loop {
             if startup_forced_updates == 0 {
                 break 'app_loop;
             }
-        } else if iter_state.break_app_loop || app.should_exit().is_some() {
+        } else if break_app_loop_next_iter || app.should_exit().is_some() {
             if app.should_exit().is_none() {
                 app.world_mut().write_message(AppExit::Success);
             }

@@ -1,5 +1,3 @@
-use std::{any::Any, sync::mpsc};
-
 use bevy_app::AppExit;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
@@ -20,8 +18,8 @@ use bevy_window::{
 
 use sdl3::{
     EventPump as SdlEventPump, EventSubsystem as SdlEventSubsystem, Sdl,
-    VideoSubsystem as SdlVideoSubsystem, event::Event as SdlEvent,
-    mouse::MouseUtil as SdlMouseUtil, video::WindowPos as SdlWindowPos,
+    VideoSubsystem as SdlVideoSubsystem, mouse::MouseUtil as SdlMouseUtil,
+    video::WindowPos as SdlWindowPos,
 };
 
 use crate::{
@@ -40,23 +38,32 @@ pub struct SdlContext {
     pub video: SdlVideoSubsystem,
     pub mouse: SdlMouseUtil,
     windows: SdlWindows,
-    pub(crate) event_rx: mpsc::Receiver<SdlEvent>,
-    pub(crate) _event_watch: Box<dyn Any + Send>,
-    pub(crate) event_pump: SdlEventPump,
+    pub(crate) event_pump: Option<SdlEventPump>,
     pub(crate) needs_to_create_sdl_windows: bool,
     pub(crate) destroyed_windows: Vec<Entity>,
 }
 
 impl SdlContext {
     pub fn init() -> Self {
-        let sdl = sdl3::init().unwrap();
-        let event = sdl.event().unwrap();
-        let (event_tx, event_rx) = mpsc::channel();
-        let event_watch = Box::new(event.add_event_watch(move |event| {
-            let _ = event_tx.send(event);
-        }));
-        let event_pump = sdl.event_pump().unwrap();
-        let video = sdl.video().unwrap();
+        let sdl = sdl3::init()
+            .inspect_err(|error| error!("Failed to initialize SDL: {error}"))
+            .expect("Failed to initialize SDL");
+
+        let event = sdl
+            .event()
+            .inspect_err(|error| error!("Failed to initialize SDL event subsystem: {error}"))
+            .expect("Failed to initialize SDL event subsystem");
+
+        let event_pump = sdl
+            .event_pump()
+            .inspect_err(|error| error!("Failed to create SDL event pump: {error}"))
+            .expect("Failed to create SDL event pump");
+
+        let video = sdl
+            .video()
+            .inspect_err(|error| error!("Failed to initialize SDL video subsystem: {error}"))
+            .expect("Failed to initialize SDL video subsystem");
+
         let mouse = sdl.mouse();
 
         Self {
@@ -65,9 +72,7 @@ impl SdlContext {
             video,
             mouse,
             windows: Default::default(),
-            event_rx,
-            _event_watch: event_watch,
-            event_pump,
+            event_pump: Some(event_pump),
             needs_to_create_sdl_windows: true,
             destroyed_windows: Default::default(),
         }

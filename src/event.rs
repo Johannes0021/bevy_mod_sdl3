@@ -31,7 +31,7 @@ use crate::{
         keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl, touch_event_from_sdl,
     },
     monitors::{SyncMonitorsParams, sync_monitors},
-    runner::RequestAppLoopState,
+    runner::RequestAppLoopBreak,
 };
 
 //==================================================================================================
@@ -56,25 +56,23 @@ pub(crate) fn handle_sdl_event(
     world: &mut World,
     sdl_event: &SdlEvent,
     bevy_window_events: &mut Vec<WindowEvent>,
-) -> RequestAppLoopState {
+) -> RequestAppLoopBreak {
+    let mut request_app_loop_break = false;
+
     match sdl_event {
         SdlEvent::Quit { timestamp: _ } | SdlEvent::AppTerminating { timestamp: _ } => {
-            return RequestAppLoopState::Break;
+            request_app_loop_break = true;
         }
 
         SdlEvent::AppLowMemory { timestamp: _ } => {} // TODO?
 
-        SdlEvent::AppWillEnterBackground { timestamp: _ } => {
-            return RequestAppLoopState::SuspendAndContinue;
-        }
+        SdlEvent::AppWillEnterBackground { timestamp: _ } => (),
 
         SdlEvent::AppDidEnterBackground { timestamp: _ } => (),
 
         SdlEvent::AppWillEnterForeground { timestamp: _ } => (),
 
-        SdlEvent::AppDidEnterForeground { timestamp: _ } => {
-            return RequestAppLoopState::ResumeAndContinue;
-        }
+        SdlEvent::AppDidEnterForeground { timestamp: _ } => (),
 
         SdlEvent::Window {
             timestamp: _,
@@ -553,7 +551,7 @@ pub(crate) fn handle_sdl_event(
         }
     }
 
-    RequestAppLoopState::Continue
+    RequestAppLoopBreak(request_app_loop_break)
 }
 
 //==================================================================================================
