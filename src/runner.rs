@@ -81,58 +81,60 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
 
         let (break_app_loop_next_iter, do_app_update) = {
             let mut break_app_loop_next_iter = false;
-            let mut do_app_update = !suspended;
+            let mut do_app_update = !suspended || (startup_forced_updates > 0);
             let mut bevy_window_events = Vec::new();
 
-            let mut sdl_events = Vec::new();
-            'sdl_event_pump_loop: for sdl_event in event_pump.poll_iter() {
-                let RequestAppLoopBreak(request_app_loop_break) =
-                    handle_sdl_event(app.world_mut(), &sdl_event, &mut bevy_window_events);
+            if !suspended || (startup_forced_updates == 0) {
+                let mut sdl_events = Vec::new();
+                'sdl_event_pump_loop: for sdl_event in event_pump.poll_iter() {
+                    let RequestAppLoopBreak(request_app_loop_break) =
+                        handle_sdl_event(app.world_mut(), &sdl_event, &mut bevy_window_events);
 
-                break_app_loop_next_iter |= request_app_loop_break;
+                    break_app_loop_next_iter |= request_app_loop_break;
 
-                if let SdlEvent::Window {
-                    timestamp: _,
-                    window_id: _,
-                    win_event,
-                } = &sdl_event
-                {
-                    if suspended && matches!(win_event, SdlWindowEvent::FocusGained) {
-                        #[cfg(target_os = "android")]
-                        {
-                            let mut ensure_surface_exists_state =
-                                SystemState::<android::EnsureSurfaceExistsParams>::from_world(
-                                    app.world_mut(),
+                    if let SdlEvent::Window {
+                        timestamp: _,
+                        window_id: _,
+                        win_event,
+                    } = &sdl_event
+                    {
+                        if suspended && matches!(win_event, SdlWindowEvent::FocusGained) {
+                            #[cfg(target_os = "android")]
+                            {
+                                let mut ensure_surface_exists_state =
+                                    SystemState::<android::EnsureSurfaceExistsParams>::from_world(
+                                        app.world_mut(),
+                                    );
+                                android::ensure_surface_exists(
+                                    ensure_surface_exists_state
+                                        .get_mut(app.world_mut())
+                                        .unwrap(),
                                 );
-                            android::ensure_surface_exists(
-                                ensure_surface_exists_state
-                                    .get_mut(app.world_mut())
-                                    .unwrap(),
-                            );
-                            ensure_surface_exists_state.apply(app.world_mut());
+                                ensure_surface_exists_state.apply(app.world_mut());
+                            }
+
+                            suspended = false;
+                            do_app_update = true;
+                        } else if matches!(win_event, SdlWindowEvent::FocusLost) {
+                            #[cfg(target_os = "android")]
+                            android::trigger_surface_destruction(app.world_mut());
+
+                            suspended = true;
+                            do_app_update = true;
+
+                            // Break and process the events because the loop might stall and die
+                            // after this event, leaving the app with no chance to react.
+                            break 'sdl_event_pump_loop;
                         }
-
-                        suspended = false;
-                        do_app_update = true;
-                    } else if matches!(win_event, SdlWindowEvent::FocusLost) {
-                        #[cfg(target_os = "android")]
-                        android::trigger_surface_destruction(app.world_mut());
-
-                        suspended = true;
-                        do_app_update = true;
-
-                        // Break and process the events because the loop might stall and die after
-                        // this event, leaving the app with no chance to react.
-                        break 'sdl_event_pump_loop;
                     }
+
+                    sdl_events.push(sdl_event);
                 }
 
-                sdl_events.push(sdl_event);
-            }
-
-            if !sdl_events.is_empty() {
-                app.world_mut()
-                    .write_message_batch(sdl_events.into_iter().map(RawSdlEvent));
+                if !sdl_events.is_empty() {
+                    app.world_mut()
+                        .write_message_batch(sdl_events.into_iter().map(RawSdlEvent));
+                }
             }
 
             let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
@@ -155,45 +157,40 @@ pub(crate) fn app_loop(mut app: App) -> AppExit {
             }
         }
 
-        while suspended && (startup_forced_updates > 0) {
-            app.update();
-            startup_forced_updates -= 1;
-        }
-
-        if break_app_loop {
-            if startup_forced_updates == 0 {
+        if startup_forced_updates == 0 {
+            if break_app_loop {
                 break 'app_loop;
-            }
-        } else if break_app_loop_next_iter || app.should_exit().is_some() {
-            if app.should_exit().is_none() {
-                app.world_mut().write_message(AppExit::Success);
-            }
-
-            break_app_loop = true;
-        } else {
-            let frame_rate = if suspended {
-                SUSPENDED_FRAME_RATE
-            } else {
-                let mut focused_windows_state: SystemState<(Res<SdlSettings>, Query<&Window>)> =
-                    SystemState::new(app.world_mut());
-                let (settings, windows) = focused_windows_state.get(app.world()).unwrap();
-                let focused = windows.iter().any(|window| window.focused);
-
-                if focused {
-                    settings.focused
-                } else {
-                    settings.unfocused
+            } else if break_app_loop_next_iter || app.should_exit().is_some() {
+                if app.should_exit().is_none() {
+                    app.world_mut().write_message(AppExit::Success);
                 }
-            };
-            match frame_rate {
-                FrameRate::Uncapped => {}
 
-                FrameRate::Limited { frame_time } => {
-                    let elapsed = frame_start.elapsed();
+                break_app_loop = true;
+            } else {
+                let frame_rate = if suspended {
+                    SUSPENDED_FRAME_RATE
+                } else {
+                    let mut focused_windows_state: SystemState<(Res<SdlSettings>, Query<&Window>)> =
+                        SystemState::new(app.world_mut());
+                    let (settings, windows) = focused_windows_state.get(app.world()).unwrap();
+                    let focused = windows.iter().any(|window| window.focused);
 
-                    if elapsed < frame_time {
-                        let remaining = frame_time - elapsed;
-                        thread::sleep(remaining);
+                    if focused {
+                        settings.focused
+                    } else {
+                        settings.unfocused
+                    }
+                };
+                match frame_rate {
+                    FrameRate::Uncapped => {}
+
+                    FrameRate::Limited { frame_time } => {
+                        let elapsed = frame_start.elapsed();
+
+                        if elapsed < frame_time {
+                            let remaining = frame_time - elapsed;
+                            thread::sleep(remaining);
+                        }
                     }
                 }
             }

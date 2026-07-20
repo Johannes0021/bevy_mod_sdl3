@@ -1,16 +1,13 @@
 use bevy_ecs::{
-    change_detection::{NonSendMut, Res},
+    change_detection::NonSend,
     entity::Entity,
     query::{With, Without},
     system::{Commands, Single, SystemParamItem},
     world::World,
 };
-use bevy_window::{CursorOptions, PrimaryWindow, RawHandleWrapper, Window};
+use bevy_window::{PrimaryWindow, RawHandleWrapper, RawHandleWrapperHolder};
 
-use crate::{
-    context::{CachedWindow, SdlContext},
-    monitors::SdlMonitors,
-};
+use crate::context::{CachedWindow, SdlContext};
 
 pub(crate) fn trigger_surface_destruction(world: &mut World) {
     // Remove the `RawHandleWrapper` from the primary window.
@@ -26,28 +23,30 @@ pub(crate) fn trigger_surface_destruction(world: &mut World) {
 
 pub(crate) type EnsureSurfaceExistsParams<'w, 's> = (
     Commands<'w, 's>,
-    NonSendMut<'w, SdlContext>,
-    Res<'w, SdlMonitors>,
+    NonSend<'w, SdlContext>,
     Single<
         'w,
         's,
-        (Entity, &'static Window, &'static CursorOptions),
+        (Entity, Option<&'static RawHandleWrapperHolder>),
         (With<CachedWindow>, Without<RawHandleWrapper>),
     >,
 );
 
 pub(crate) fn ensure_surface_exists(
-    (mut commands, mut sdl_context, sdl_monitors, window): SystemParamItem<
-        EnsureSurfaceExistsParams,
-    >,
+    (mut commands, sdl_context, window): SystemParamItem<EnsureSurfaceExistsParams>,
 ) {
     // Get windows that are cached but without raw handles.
     // Those window were already created, but got their handle wrapper removed when the app was
     // suspended.
 
-    let (entity, window, cursor_options) = *window;
-    let sdl_window = sdl_context.create_window(entity, window, cursor_options, &sdl_monitors);
-    if let Ok(handle_wrapper) = RawHandleWrapper::new(sdl_window) {
-        commands.entity(entity).insert(handle_wrapper.clone());
+    let (window, handle_holder) = *window;
+
+    if let Some(sdl_window) = sdl_context.get_window(window)
+        && let Ok(handle_wrapper) = RawHandleWrapper::new(sdl_window)
+    {
+        commands.entity(window).insert(handle_wrapper.clone());
+        if let Some(handle_holder) = handle_holder {
+            *handle_holder.0.lock().unwrap() = Some(handle_wrapper);
+        }
     }
 }
