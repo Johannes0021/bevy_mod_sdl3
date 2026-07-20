@@ -629,13 +629,9 @@ pub fn handle_sdl_window_event(
             }
         }
 
-        SdlWindowEvent::Minimized => {
-            try_with_window(world, entity, |w| w.set_minimized(true));
-        }
+        SdlWindowEvent::Minimized => (), // TODO?
 
-        SdlWindowEvent::Maximized => {
-            try_with_window(world, entity, |w| w.set_maximized(true));
-        }
+        SdlWindowEvent::Maximized => (), // TODO?
 
         SdlWindowEvent::Occluded => bevy_window_events.push(
             WindowOccluded {
