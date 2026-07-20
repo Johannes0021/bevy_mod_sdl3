@@ -17,14 +17,14 @@ use bevy_window::{
 };
 
 use sdl3::{
-    EventPump as SdlEventPump, EventSubsystem as SdlEventSubsystem, Sdl,
-    VideoSubsystem as SdlVideoSubsystem, mouse::MouseUtil as SdlMouseUtil,
-    video::WindowPos as SdlWindowPos,
+    EventSubsystem as SdlEventSubsystem, Sdl, VideoSubsystem as SdlVideoSubsystem,
+    mouse::MouseUtil as SdlMouseUtil, video::WindowPos as SdlWindowPos,
 };
 
 use crate::{
     converters::theme_from_sdl,
     monitors::{SdlDisplayModeExt, SdlMonitors},
+    runner::AppLoopState,
     windows::{SdlWindowExt, SdlWindowWrapper, SdlWindows, WindowId},
 };
 
@@ -38,9 +38,7 @@ pub struct SdlContext {
     pub video: SdlVideoSubsystem,
     pub mouse: SdlMouseUtil,
     windows: SdlWindows,
-    pub(crate) event_pump: Option<SdlEventPump>,
-    pub(crate) needs_to_create_sdl_windows: bool,
-    pub(crate) destroyed_windows: Vec<Entity>,
+    pub(crate) app_loop_state: AppLoopState,
 }
 
 impl SdlContext {
@@ -53,11 +51,6 @@ impl SdlContext {
             .event()
             .inspect_err(|error| error!("Failed to initialize SDL event subsystem: {error}"))
             .expect("Failed to initialize SDL event subsystem");
-
-        let event_pump = sdl
-            .event_pump()
-            .inspect_err(|error| error!("Failed to create SDL event pump: {error}"))
-            .expect("Failed to create SDL event pump");
 
         let video = sdl
             .video()
@@ -72,9 +65,7 @@ impl SdlContext {
             video,
             mouse,
             windows: Default::default(),
-            event_pump: Some(event_pump),
-            needs_to_create_sdl_windows: true,
-            destroyed_windows: Default::default(),
+            app_loop_state: Default::default(),
         }
     }
 
@@ -101,7 +92,7 @@ impl SdlContext {
     ) -> Option<WindowWrapper<SdlWindowWrapper>> {
         let window = self.windows.destroy(entity);
         if window.is_some() {
-            self.destroyed_windows.push(entity);
+            self.app_loop_state.destroyed_windows.push(entity);
         }
 
         window

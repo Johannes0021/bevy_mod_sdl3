@@ -31,7 +31,7 @@ use crate::{
         keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl, touch_event_from_sdl,
     },
     monitors::{SyncMonitorsParams, sync_monitors},
-    runner::RequestAppLoopBreak,
+    runner::RequestAppLoopExit,
 };
 
 //==================================================================================================
@@ -56,12 +56,14 @@ pub(crate) fn handle_sdl_event(
     world: &mut World,
     sdl_event: &SdlEvent,
     bevy_window_events: &mut Vec<WindowEvent>,
-) -> RequestAppLoopBreak {
-    let mut request_app_loop_break = false;
+) -> RequestAppLoopExit {
+    let mut request_app_loop_exit = false;
 
     match sdl_event {
-        SdlEvent::Quit { timestamp: _ } | SdlEvent::AppTerminating { timestamp: _ } => {
-            request_app_loop_break = true;
+        SdlEvent::Quit { timestamp: _ } => (),
+
+        SdlEvent::AppTerminating { timestamp: _ } => {
+            request_app_loop_exit = true;
         }
 
         SdlEvent::AppLowMemory { timestamp: _ } => {} // TODO?
@@ -551,7 +553,7 @@ pub(crate) fn handle_sdl_event(
         }
     }
 
-    RequestAppLoopBreak(request_app_loop_break)
+    RequestAppLoopExit(request_app_loop_exit)
 }
 
 //==================================================================================================
