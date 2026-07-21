@@ -61,9 +61,22 @@ the issue by disabling `Metal API Validation` in the xcode scheme settings.
 ---
 
 ## Android
+- Set the envs (see below)
 - Follow the guide on https://github.com/libsdl-org/SDL/blob/main/docs/README-android.md
 - Build lib with `crate-type = ["cdylib"]`
+- I think features = ["build-from-source"] on sdl3 create is needed.
 - Add the lib<name>.so and the libSDL3.so to the jniLibs/<architecture> folder
+
+Envs for arm64:
+```sh
+export ANDROID_SDK_HOME="$HOME/Android/Sdk"
+export ANDROID_NDK_HOME="$ANDROID_SDK_HOME/ndk/<ndl_version>"
+export CMAKE_TOOLCHAIN_FILE_aarch64_linux_android="$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake"
+export CC_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android27-clang"
+export CXX_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android27-clang++"
+export AR_aarch64_linux_android="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar"
+export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android27-clang"
+```
 
 ### Android issues with this plugin
 - Bevy relies on AndroidApp from android-activity crate to access the AssetManager.
@@ -79,6 +92,11 @@ this, I use `Msaa::Off`.
 
 I also noticed that Bevy uses less CPU when running without multi-threading on mobile devices. For
 this reason, I use single-threaded mode on mobile (the game is simple).
+
+
+
+# Off topic, but interesting: OpenGL on Android:
+https://mevlyshkin.com/notes/bevy-android-setup/
 
 
 
