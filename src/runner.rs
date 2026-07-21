@@ -74,9 +74,12 @@ pub(crate) struct AppLoopState {
 pub(crate) fn app_loop(app: App) -> AppExit {
     APP.with_borrow_mut(|thread_local_app| *thread_local_app = Some(app));
 
-    match app_loop_impl() {
-        Ok(()) => AppExit::Success,
+    let result = app_loop_impl();
 
+    APP.with_borrow_mut(|thread_local_app| *thread_local_app = None);
+
+    match result {
+        Ok(()) => AppExit::Success,
         Err(error) => {
             error!("Application loop failed: {error}");
             AppExit::Error(EXIT_FAILURE)
