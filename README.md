@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
 ```
 
 ### iOS xcode diagnostics memory leak
-I noticed that the memory usage of th app kept increasing significantly over time. I was able to fix
-the issue by disabling `Metal API Validation` in the xcode scheme settings.
+I noticed that the memory usage of the app kept increasing significantly over time. I was able to
+fix the issue by disabling `Metal API Validation` in the xcode scheme settings.
 1. Product
 2. Scheme
 3. Edit Scheme
@@ -70,6 +70,7 @@ the issue by disabling `Metal API Validation` in the xcode scheme settings.
 - Build lib with `crate-type = ["cdylib"]`
 - I think features = ["build-from-source"] on sdl3 create is needed.
 - Add the `lib<name>.so` and the `libSDL3.so` to the `jniLibs/<architecture>` folder
+- I also had to link `AudioToolbox.framework`, `Metal.framework` and `UIKit.framework`
 
 Envs for arm64:
 - Replace:
