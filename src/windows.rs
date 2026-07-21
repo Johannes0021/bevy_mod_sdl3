@@ -131,6 +131,7 @@ impl SdlWindows {
         }
 
         let mut sdl_window = sdl_window_builder
+            .high_pixel_density()
             .metal_view()
             .build()
             .inspect_err(|error| error!("Failed to build SDL window: {error}"))
