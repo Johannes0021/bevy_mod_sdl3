@@ -35,7 +35,7 @@ impl From<u32> for WindowId {
 //==================================================================================================
 
 #[derive(Deref, DerefMut)]
-pub(crate) struct SdlWindowWrapper(pub(crate) SdlWindow);
+pub(crate) struct SdlWindowWrapper(pub SdlWindow);
 
 // TODO: I don't know if this is safe...
 //

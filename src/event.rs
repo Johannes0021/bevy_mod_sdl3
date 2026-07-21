@@ -560,7 +560,7 @@ pub(crate) fn handle_sdl_event(
 // SdlWindowEvent
 //==================================================================================================
 
-pub fn handle_sdl_window_event(
+pub(crate) fn handle_sdl_window_event(
     world: &mut World,
     entity: Entity,
     sdl_window_event: SdlWindowEvent,
@@ -810,7 +810,7 @@ where
     }
 }
 
-pub type SyncWindowScaleFactorsParams<'w, 's> = (
+pub(crate) type SyncWindowScaleFactorsParams<'w, 's> = (
     NonSendMut<'w, SdlContext>,
     Query<'w, 's, (Entity, &'static mut Window)>,
 );

@@ -53,7 +53,7 @@ pub fn get_refresh_rate_millihertz(mode: &SdlDisplayMode) -> Option<u32> {
     }
 }
 
-pub type SyncMonitorsParams<'w, 's> = (
+pub(crate) type SyncMonitorsParams<'w, 's> = (
     Commands<'w, 's>,
     NonSend<'w, SdlContext>,
     ResMut<'w, SdlMonitors>,

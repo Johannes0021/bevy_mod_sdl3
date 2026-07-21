@@ -42,7 +42,7 @@ pub struct SdlContext {
 }
 
 impl SdlContext {
-    pub fn init() -> Self {
+    pub(crate) fn init() -> Self {
         let sdl = sdl3::init()
             .inspect_err(|error| error!("Failed to initialize SDL: {error}"))
             .expect("Failed to initialize SDL");
@@ -125,7 +125,7 @@ pub(crate) struct CachedCursorOptions(CursorOptions);
 // Systems
 //==================================================================================================
 
-pub type CreateWindowParams<'w, 's> = (
+pub(crate) type CreateWindowParams<'w, 's> = (
     Commands<'w, 's>,
     NonSendMut<'w, SdlContext>,
     Res<'w, SdlMonitors>,
@@ -143,7 +143,7 @@ pub type CreateWindowParams<'w, 's> = (
     >,
 );
 
-pub fn create_windows(
+pub(crate) fn create_windows(
     (
         mut commands,
         mut sdl_context,
