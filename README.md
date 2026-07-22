@@ -78,7 +78,7 @@ Envs for arm64:
     - <your_os>
     - <min_sdk_version>
 ```sh
-export ANDROID_SDK_ROOT="$ROOT/Android/Sdk"
+export ANDROID_SDK_ROOT="$HOME/Android/Sdk"
 export ANDROID_NDK_ROOT="$ANDROID_SDK_ROOT/ndk/<ndk_version>"
 export CMAKE_TOOLCHAIN_FILE_aarch64_linux_android="$ANDROID_NDK_ROOT/build/cmake/android.toolchain.cmake"
 export CC_aarch64_linux_android="$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/<your_os>/bin/aarch64-linux-android<min_sdk_version>-clang"
@@ -99,7 +99,7 @@ export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$ANDROID_NDK_ROOT/toolchains/l
 I noticed that MSAA uses a lot of GPU power on mobile devices, especially on Android. Because of
 this, I use `Msaa::Off`.
 
-I also noticed that Bevy uses less CPU when running without multi-threading on mobile devices. For
+I also noticed that bevy uses less CPU when running without multi-threading on mobile devices. For
 this reason, I use single-threaded mode on mobile (the game is simple).
 
 
