@@ -47,7 +47,8 @@ pub extern "C" fn run_app() {
 5. In the xcode project select the project in the main view, go to the "General" tab, scroll down to
    "Frameworks, Libraries, and Embedded Content", and drag and drop the `.a` lib.
 6. Still in "Frameworks, Libraries, and Embedded Content", select "Embed & Sign" for the `.a` lib.
-7. Add a `main.m` file:
+7. I also had to link `AudioToolbox.framework`, `Metal.framework` and `UIKit.framework`
+8. Add a `main.m` file:
 ```objc
 #include <SDL3/SDL_main.h>
 
@@ -72,12 +73,11 @@ fix the issue by disabling `Metal API Validation` in the xcode scheme settings.
 ---
 
 ## Android
-- Set the envs (see below)
-- Follow the guide on https://github.com/libsdl-org/SDL/blob/main/docs/README-android.md
-- Build lib with `crate-type = ["cdylib"]`
-- I think features = ["build-from-source"] on sdl3 create is needed.
-- Add the `lib<name>.so` and the `libSDL3.so` to the `jniLibs/<architecture>` folder
-- I also had to link `AudioToolbox.framework`, `Metal.framework` and `UIKit.framework`
+1. Set the envs (see below)
+2. Follow the guide on https://github.com/libsdl-org/SDL/blob/main/docs/README-android.md
+3. Build lib with `crate-type = ["cdylib"]`
+4. I think features = ["build-from-source"] on sdl3 create is needed.
+5. Add the `lib<name>.so` and the `libSDL3.so` to the `jniLibs/<architecture>` folder
 
 Envs for arm64:
 - Replace:
