@@ -133,8 +133,6 @@ fn app_loop_impl() -> Result<(), String> {
             with_app_mut(run_sync_monitors_system)?;
         }
 
-        with_app_mut(run_create_windows_system_if_needed)?;
-
         if !last_iter {
             'sdl_event_pump_loop: for sdl_event in event_pump.poll_iter() {
                 let break_sdl_event_pump_loop = with_app_mut(|app| {
@@ -166,6 +164,8 @@ fn app_loop_impl() -> Result<(), String> {
         }
 
         with_app_mut(try_update_app)?;
+
+        with_app_mut(run_create_windows_system_if_needed)?;
 
         if last_iter {
             break 'app_loop;
