@@ -255,8 +255,9 @@ fn apply_frame_pacing(app: &mut App, frame_start: Instant) {
             settings.unfocused
         }
     };
+
     match frame_rate {
-        FrameRate::Uncapped => {}
+        FrameRate::Uncapped => (),
 
         FrameRate::Limited { frame_time } => {
             let elapsed = frame_start.elapsed();
