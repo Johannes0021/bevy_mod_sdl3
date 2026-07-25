@@ -409,15 +409,17 @@ pub(crate) fn changed_windows(
             }
         }
 
-        if window.cursor_position() != cache.cursor_position()
-            && let Some(cursor_position) = window.cursor_position()
-        {
-            sdl_context.mouse.warp_mouse_in_window(
-                &sdl_window,
-                cursor_position.x,
-                cursor_position.y,
-            );
-        }
+        // TODO: Setting the cursor position causes problems on macos.
+        // I don't know what the similar code in bevy_winit does.
+        //if window.cursor_position() != cache.cursor_position()
+        //    && let Some(cursor_position) = window.cursor_position()
+        //{
+        //    sdl_context.mouse.warp_mouse_in_window(
+        //        &sdl_window,
+        //        cursor_position.x,
+        //        cursor_position.y,
+        //    );
+        //}
 
         if window.decorations != cache.decorations {
             sdl_window.set_bordered(window.decorations);
