@@ -14,10 +14,14 @@ them. For now, my plan is to use this plugin on iOS and the default winit plugin
 - https://github.com/rust-windowing/winit/issues/3325
     - There is a patch for this issue that I use:
       https://github.com/rib/winit/commit/c28e425214e82bdb86dcdf89c9488554a18e24b2
+- https://github.com/bevyengine/bevy/issues/16798
+    and https://github.com/rust-mobile/android-activity/issues/175
+    - Workaround patch: https://github.com/Johannes0021/android-activity.git
 
-Add this to your Cargo.toml to fix `android activity recreation` for bevy `v0.19.0`:
+Add this to your Cargo.toml to fix the android issues for bevy `v0.19.0`:
 ```toml
 [patch.crates-io]
+android-activity = { git = "https://github.com/Johannes0021/android-activity.git", branch = "game-activity-patch-v0.6.1" }
 winit = { git = "https://github.com/Johannes0021/winit.git", branch = "android-destroy-recreate-v0.30.13" }
 bevy_android = { git = "https://github.com/Johannes0021/bevy.git", branch = "mobile-patch-v0.19.0" }
 ```
