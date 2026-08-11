@@ -16,7 +16,8 @@ them. For now, my plan is to use this plugin on iOS and the default winit plugin
       https://github.com/rib/winit/commit/c28e425214e82bdb86dcdf89c9488554a18e24b2
 - https://github.com/bevyengine/bevy/issues/16798
     and https://github.com/rust-mobile/android-activity/issues/175
-    - Workaround patch: https://github.com/Johannes0021/android-activity.git
+    - Workaround patch:
+      https://github.com/Johannes0021/android-activity/commit/d31a501a252a2dbb359bd7b4673128017aab7746
 
 Add this to your Cargo.toml to fix the android issues for bevy `v0.19.0`:
 ```toml
