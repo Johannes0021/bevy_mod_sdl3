@@ -66,7 +66,7 @@ pub(crate) fn handle_sdl_event(
             request_app_loop_exit = true;
         }
 
-        SdlEvent::AppLowMemory { timestamp: _ } => {} // TODO?
+        SdlEvent::AppLowMemory { timestamp: _ } => (), // TODO?
 
         SdlEvent::AppWillEnterBackground { timestamp: _ } => (),
 

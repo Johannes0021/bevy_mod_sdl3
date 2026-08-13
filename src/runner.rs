@@ -1,10 +1,4 @@
-use std::{
-    cell::RefCell,
-    mem,
-    num::NonZeroU8,
-    thread,
-    time::{Duration, Instant},
-};
+use std::{cell::RefCell, mem, num::NonZeroU8, thread, time::Instant};
 
 use bevy_app::{App, AppExit, PluginsState};
 use bevy_ecs::{
@@ -28,9 +22,6 @@ use crate::{
 };
 
 const EXIT_FAILURE: NonZeroU8 = NonZeroU8::new(1).unwrap();
-const SUSPENDED_FRAME_RATE: FrameRate = FrameRate::Limited {
-    frame_time: Duration::from_millis(100),
-};
 
 pub(crate) struct RequestAppLoopExit(pub bool);
 
@@ -240,13 +231,14 @@ fn should_exit(app: &mut App) -> bool {
 
 fn apply_frame_pacing(app: &mut App, frame_start: Instant) {
     let sdl_context = app.world().non_send::<SdlContext>();
+    let suspended = sdl_context.app_loop_state.suspended;
 
-    let frame_rate = if sdl_context.app_loop_state.suspended {
-        SUSPENDED_FRAME_RATE
+    let mut focused_windows_state: SystemState<(Res<SdlSettings>, Query<&Window>)> =
+        SystemState::new(app.world_mut());
+    let (settings, windows) = focused_windows_state.get(app.world()).unwrap();
+    let frame_rate = if suspended {
+        settings.suspended
     } else {
-        let mut focused_windows_state: SystemState<(Res<SdlSettings>, Query<&Window>)> =
-            SystemState::new(app.world_mut());
-        let (settings, windows) = focused_windows_state.get(app.world()).unwrap();
         let focused = windows.iter().any(|window| window.focused);
 
         if focused {
