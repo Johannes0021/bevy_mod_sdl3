@@ -21,7 +21,7 @@ impl Default for SdlSettings {
                 frame_time: Duration::from_secs_f64(1.0 / 60.0),
             },
             suspended: FrameRate::Limited {
-                frame_time: Duration::from_secs(1),
+                frame_time: Duration::from_millis(320),
             },
         }
     }
