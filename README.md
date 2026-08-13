@@ -19,12 +19,12 @@ them. For now, my plan is to use this plugin on iOS and the default winit plugin
     - Workaround patch:
       https://github.com/Johannes0021/android-activity/commit/d31a501a252a2dbb359bd7b4673128017aab7746
 
-Add this to your Cargo.toml to fix the android issues for bevy `v0.19.0`:
+Add this to your Cargo.toml to fix the android issues for bevy `v0.19.1`:
 ```toml
 [patch.crates-io]
 android-activity = { git = "https://github.com/Johannes0021/android-activity.git", branch = "game-activity-patch-v0.6.1" }
 winit = { git = "https://github.com/Johannes0021/winit.git", branch = "android-destroy-recreate-v0.30.13" }
-bevy_android = { git = "https://github.com/Johannes0021/bevy.git", branch = "mobile-patch-v0.19.0" }
+bevy_android = { git = "https://github.com/Johannes0021/bevy.git", branch = "mobile-patch-v0.19.1" }
 ```
 
 ## winit issues on iOS
