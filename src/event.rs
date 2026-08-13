@@ -167,12 +167,7 @@ pub(crate) fn handle_sdl_event(
             xrel,
             yrel,
         } => {
-            // https://wiki.libsdl.org/SDL3/SDL_MouseMotionEvent
-            let is_real_mouse = *which != 0
-                && *which != sdl3::sys::touch::SDL_TOUCH_MOUSEID
-                && *which != sdl3::sys::pen::SDL_PEN_MOUSEID;
-
-            if is_real_mouse {
+            if is_real_mouse(*which) {
                 let delta = Vec2::new(*xrel, *yrel);
                 bevy_window_events.push(MouseMotion { delta }.into());
 
@@ -206,63 +201,67 @@ pub(crate) fn handle_sdl_event(
         SdlEvent::MouseButtonDown {
             timestamp: _,
             window_id,
-            which: _,
+            which,
             mouse_btn,
             clicks: _,
             x: _,
             y: _,
         } => {
-            let sdl_context = world.non_send::<SdlContext>();
-            if let Some((entity, button)) = sdl_context
-                .get_window_entity((*window_id).into())
-                .and_then(|entity| {
-                    let button = mouse_button_from_sdl(*mouse_btn)?;
-                    Some((entity, button))
-                })
-            {
-                bevy_window_events.push(
-                    MouseButtonInput {
-                        button,
-                        state: ButtonState::Pressed,
-                        window: entity,
-                    }
-                    .into(),
-                );
+            if is_real_mouse(*which) {
+                let sdl_context = world.non_send::<SdlContext>();
+                if let Some((entity, button)) = sdl_context
+                    .get_window_entity((*window_id).into())
+                    .and_then(|entity| {
+                        let button = mouse_button_from_sdl(*mouse_btn)?;
+                        Some((entity, button))
+                    })
+                {
+                    bevy_window_events.push(
+                        MouseButtonInput {
+                            button,
+                            state: ButtonState::Pressed,
+                            window: entity,
+                        }
+                        .into(),
+                    );
+                }
             }
         }
 
         SdlEvent::MouseButtonUp {
             timestamp: _,
             window_id,
-            which: _,
+            which,
             mouse_btn,
             clicks: _,
             x: _,
             y: _,
         } => {
-            let sdl_context = world.non_send::<SdlContext>();
-            if let Some((entity, button)) = sdl_context
-                .get_window_entity((*window_id).into())
-                .and_then(|entity| {
-                    let button = mouse_button_from_sdl(*mouse_btn)?;
-                    Some((entity, button))
-                })
-            {
-                bevy_window_events.push(
-                    MouseButtonInput {
-                        button,
-                        state: ButtonState::Released,
-                        window: entity,
-                    }
-                    .into(),
-                );
+            if is_real_mouse(*which) {
+                let sdl_context = world.non_send::<SdlContext>();
+                if let Some((entity, button)) = sdl_context
+                    .get_window_entity((*window_id).into())
+                    .and_then(|entity| {
+                        let button = mouse_button_from_sdl(*mouse_btn)?;
+                        Some((entity, button))
+                    })
+                {
+                    bevy_window_events.push(
+                        MouseButtonInput {
+                            button,
+                            state: ButtonState::Released,
+                            window: entity,
+                        }
+                        .into(),
+                    );
+                }
             }
         }
 
         SdlEvent::MouseWheel {
             timestamp: _,
             window_id,
-            which: _,
+            which,
             x,
             y,
             direction: _, // TODO: Do we have to take this into account?
@@ -271,18 +270,20 @@ pub(crate) fn handle_sdl_event(
             integer_x: _,
             integer_y: _,
         } => {
-            let sdl_context = world.non_send::<SdlContext>();
-            if let Some(entity) = sdl_context.get_window_entity((*window_id).into()) {
-                bevy_window_events.push(
-                    MouseWheel {
-                        unit: MouseScrollUnit::Line,
-                        x: *x,
-                        y: *y,
-                        window: entity,
-                        phase: TouchPhase::Moved,
-                    }
-                    .into(),
-                );
+            if is_real_mouse(*which) {
+                let sdl_context = world.non_send::<SdlContext>();
+                if let Some(entity) = sdl_context.get_window_entity((*window_id).into()) {
+                    bevy_window_events.push(
+                        MouseWheel {
+                            unit: MouseScrollUnit::Line,
+                            x: *x,
+                            y: *y,
+                            window: entity,
+                            phase: TouchPhase::Moved,
+                        }
+                        .into(),
+                    );
+                }
             }
         }
 
@@ -809,6 +810,11 @@ where
     } else {
         None
     }
+}
+
+fn is_real_mouse(mouse_id: u32) -> bool {
+    // https://wiki.libsdl.org/SDL3/SDL_MouseMotionEvent
+    mouse_id != sdl3::sys::touch::SDL_TOUCH_MOUSEID && mouse_id != sdl3::sys::pen::SDL_PEN_MOUSEID
 }
 
 pub(crate) type SyncWindowScaleFactorsParams<'w, 's> = (
