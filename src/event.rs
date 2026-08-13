@@ -16,7 +16,7 @@ use bevy_input::{
     mouse::{MouseButtonInput, MouseMotion, MouseScrollUnit, MouseWheel},
     touch::TouchPhase,
 };
-use bevy_math::{DVec2, IVec2, Vec2};
+use bevy_math::{IVec2, Vec2};
 use bevy_window::{
     CursorEntered, CursorLeft, CursorMoved, FileDragAndDrop, Window,
     WindowBackendScaleFactorChanged, WindowCloseRequested, WindowEvent, WindowFocused, WindowMoved,
@@ -160,45 +160,46 @@ pub(crate) fn handle_sdl_event(
         SdlEvent::MouseMotion {
             timestamp: _,
             window_id,
-            which: _,
+            which,
             mousestate: _,
             x,
             y,
             xrel,
             yrel,
         } => {
-            let delta = Vec2::new(*xrel, *yrel);
-            bevy_window_events.push(MouseMotion { delta }.into());
+            // https://wiki.libsdl.org/SDL3/SDL_MouseMotionEvent
+            let is_real_mouse = *which != 0
+                && *which != sdl3::sys::touch::SDL_TOUCH_MOUSEID
+                && *which != sdl3::sys::pen::SDL_PEN_MOUSEID;
 
-            let sdl_context = world.non_send::<SdlContext>();
-            if let Some((entity, cursor_position, cursor_delta)) = sdl_context
-                .get_window_entity((*window_id).into())
-                .and_then(|entity| {
-                    try_with_window(world, entity, |window| {
-                        let physical_position = DVec2::new(*x as f64, *y as f64);
+            if is_real_mouse {
+                let delta = Vec2::new(*xrel, *yrel);
+                bevy_window_events.push(MouseMotion { delta }.into());
 
-                        let last_position = window.physical_cursor_position();
-                        let delta = last_position.map(|last_pos| {
-                            (physical_position.as_vec2() - last_pos)
-                                / window.resolution.scale_factor()
-                        });
+                let sdl_context = world.non_send::<SdlContext>();
+                if let Some((entity, position, delta)) = sdl_context
+                    .get_window_entity((*window_id).into())
+                    .and_then(|entity| {
+                        try_with_window(world, entity, |window| {
+                            let logical_position = Vec2::new(*x, *y);
+                            let last_position = window.cursor_position();
+                            let delta = last_position.map(|last_pos| logical_position - last_pos);
 
-                        window.set_physical_cursor_position(Some(physical_position));
-                        let position =
-                            (physical_position / window.resolution.scale_factor() as f64).as_vec2();
+                            window.set_cursor_position(Some(logical_position));
 
-                        (entity, position, delta)
+                            (entity, logical_position, delta)
+                        })
                     })
-                })
-            {
-                bevy_window_events.push(
-                    CursorMoved {
-                        window: entity,
-                        position: cursor_position,
-                        delta: cursor_delta,
-                    }
-                    .into(),
-                );
+                {
+                    bevy_window_events.push(
+                        CursorMoved {
+                            window: entity,
+                            position,
+                            delta,
+                        }
+                        .into(),
+                    );
+                }
             }
         }
 
@@ -650,7 +651,7 @@ pub(crate) fn handle_sdl_window_event(
         }
 
         SdlWindowEvent::MouseLeave => {
-            try_with_window(world, entity, |w| w.set_physical_cursor_position(None));
+            try_with_window(world, entity, |w| w.set_cursor_position(None));
             bevy_window_events.push(CursorLeft { window: entity }.into());
         }
 
