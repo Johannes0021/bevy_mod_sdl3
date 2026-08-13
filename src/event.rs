@@ -168,8 +168,10 @@ pub(crate) fn handle_sdl_event(
             yrel,
         } => {
             if is_real_mouse(*which) {
-                let delta = Vec2::new(*xrel, *yrel);
-                bevy_window_events.push(MouseMotion { delta }.into());
+                {
+                    let delta = Vec2::new(*xrel, *yrel);
+                    bevy_window_events.push(MouseMotion { delta }.into());
+                }
 
                 let sdl_context = world.non_send::<SdlContext>();
                 if let Some((entity, position, delta)) = sdl_context
