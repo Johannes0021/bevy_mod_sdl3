@@ -821,10 +821,10 @@ pub(crate) type SyncWindowScaleFactorsParams<'w, 's> = (
 );
 
 pub(crate) fn sync_window_scale_factors(
-    (sdl_context, mut windows): SystemParamItem<SyncWindowScaleFactorsParams>,
+    (sdl_context, windows): SystemParamItem<SyncWindowScaleFactorsParams>,
     bevy_window_events: &mut Vec<WindowEvent>,
 ) {
-    for (window_entity, mut window) in &mut windows {
+    for (window_entity, mut window) in windows {
         let Some(scale_factor) = sdl_context
             .get_window(window_entity)
             .map(|w| w.display_scale() as f64)

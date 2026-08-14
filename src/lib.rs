@@ -26,7 +26,7 @@ pub use windows::*;
 
 pub use sdl3;
 
-use bevy_app::{App, Last, Plugin};
+use bevy_app::{App, First, Last, Plugin};
 use bevy_ecs::{
     change_detection::NonSendMut, lifecycle::Add, observer::On, schedule::IntoScheduleConfigs,
 };
@@ -51,6 +51,7 @@ impl Plugin for Sdl3Plugin {
             .init_resource::<SdlSettings>()
             .add_message::<RawSdlEvent>()
             .set_runner(runner::app_loop)
+            .add_systems(First, clear_cache)
             .add_systems(
                 Last,
                 (

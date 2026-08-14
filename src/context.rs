@@ -147,10 +147,10 @@ pub(crate) fn create_windows(
         mut sdl_context,
         sdl_monitors,
         mut window_created_events,
-        mut created_windows,
+        created_windows,
     ): SystemParamItem<CreateWindowParams>,
 ) {
-    for (entity, mut window, cursor_options, handle_holder) in &mut created_windows {
+    for (entity, mut window, cursor_options, handle_holder) in created_windows {
         if sdl_context.get_window(entity).is_some() {
             continue;
         }
@@ -242,10 +242,26 @@ pub(crate) fn destroy_windows(
     }
 }
 
+pub(crate) fn clear_cache(
+    changed_windows: Query<(&mut Window, &mut CachedWindow), Changed<Window>>,
+    changed_cursor_options: Query<
+        (&mut CursorOptions, &mut CachedCursorOptions),
+        Changed<CursorOptions>,
+    >,
+) {
+    for (window, mut cache) in changed_windows {
+        **cache = window.clone();
+    }
+
+    for (cursor_options, mut cache) in changed_cursor_options {
+        **cache = cursor_options.clone();
+    }
+}
+
 pub(crate) fn changed_windows(
     mut commands: Commands,
     sdl_context: NonSendMut<SdlContext>,
-    mut changed_windows: Query<
+    changed_windows: Query<
         (Entity, &mut Window, &mut CachedWindow, Option<&OnMonitor>),
         Changed<Window>,
     >,
@@ -254,7 +270,7 @@ pub(crate) fn changed_windows(
     mut window_event: MessageWriter<WindowEvent>,
     mut window_rescaled: MessageWriter<WindowScaleFactorChanged>,
 ) {
-    for (entity, mut window, mut cache, monitor_relationship) in &mut changed_windows {
+    for (entity, mut window, mut cache, monitor_relationship) in changed_windows {
         let Some(mut sdl_window) = sdl_context.get_window(entity).map(|w| (*w).clone()) else {
             continue;
         };
@@ -670,7 +686,7 @@ pub(crate) fn changed_windows(
 
 pub(crate) fn changed_cursor_options(
     sdl_context: NonSendMut<SdlContext>,
-    mut changed_windows: Query<
+    changed_windows: Query<
         (
             Entity,
             &Window,
@@ -680,7 +696,7 @@ pub(crate) fn changed_cursor_options(
         // TODO: Changed<CursorOptions>, Look at how CursorOptions::visible is handled in this fn.
     >,
 ) {
-    for (entity, window, mut cursor_options, mut cache) in &mut changed_windows {
+    for (entity, window, mut cursor_options, mut cache) in changed_windows {
         // This system already only runs when the cursor options change, so we need to bypass
         // change detection or the next frame will also run this system
         let cursor_options = cursor_options.bypass_change_detection();

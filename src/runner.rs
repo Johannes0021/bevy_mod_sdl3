@@ -212,11 +212,9 @@ fn app_loop_impl() -> Result<(), String> {
             with_app_mut(AppLoopState::try_update_app)?;
         }
 
-        with_app_mut(run_create_windows_system_if_needed)?;
-
         last_iter |= with_app_mut(should_exit)?;
-
         if !last_iter {
+            with_app_mut(run_create_windows_system_if_needed)?;
             with_app_mut(|app| apply_frame_pacing(app, frame_start))?;
         }
     }
