@@ -6,11 +6,10 @@ use bevy_input::{
 };
 use bevy_math::Vec2;
 use bevy_window::WindowTheme;
-
-use sdl3::video::SystemTheme as SdlSystemTheme;
 use sdl3::{
     keyboard::{Keycode as SdlKeycode, Scancode as SdlScancode},
     mouse::MouseButton as SdlMouseButton,
+    video::SystemTheme as SdlSystemTheme,
 };
 
 pub fn theme_from_sdl(theme: SdlSystemTheme) -> Option<WindowTheme> {

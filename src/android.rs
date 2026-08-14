@@ -1,3 +1,4 @@
+use crate::context::{CachedWindow, SdlContext};
 use bevy_ecs::{
     change_detection::NonSend,
     entity::Entity,
@@ -6,8 +7,6 @@ use bevy_ecs::{
     world::World,
 };
 use bevy_window::{PrimaryWindow, RawHandleWrapper, RawHandleWrapperHolder};
-
-use crate::context::{CachedWindow, SdlContext};
 
 pub(crate) fn trigger_surface_destruction(world: &mut World) {
     // Remove the `RawHandleWrapper` from the primary window.

@@ -1,5 +1,4 @@
-use std::{collections::HashMap, marker::PhantomData};
-
+use crate::monitors::{SdlDisplayModeExt, SdlMonitors, get_refresh_rate_millihertz};
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::entity::{Entity, EntityHashMap};
 use bevy_log::{debug, error};
@@ -9,13 +8,11 @@ use bevy_window::{
 use raw_window_handle::{
     DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, WindowHandle,
 };
-
 use sdl3::{
     VideoSubsystem as SdlVideoSubsystem, mouse::MouseUtil as SdlMouseUtil,
     video::Window as SdlWindow,
 };
-
-use crate::monitors::{SdlDisplayModeExt, SdlMonitors, get_refresh_rate_millihertz};
+use std::{collections::HashMap, marker::PhantomData};
 
 //==================================================================================================
 // WindowId

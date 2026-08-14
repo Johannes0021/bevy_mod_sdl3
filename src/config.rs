@@ -1,6 +1,5 @@
-use std::time::Duration;
-
 use bevy_ecs::resource::Resource;
+use std::time::Duration;
 
 //==================================================================================================
 // SdlSettings

@@ -114,39 +114,6 @@ this, I use `Msaa::Off`.
 I also noticed that bevy uses less CPU when running without multi-threading on mobile devices. For
 this reason, I use single-threaded mode on mobile (the game is simple).
 
-On Android with the winit backend, the app was killed in the background because of CPU usage, I
-could fix it with:
-```rust
-app.insert_resource(WinitSettings::game())
-    .add_systems(Update, update_winit_settings_on_lifecycle);
-
-// ...
-
-fn update_winit_settings_on_lifecycle(
-    mut winit_settings: ResMut<WinitSettings>,
-    mut lifecycle_messages: MessageReader<AppLifecycle>,
-) {
-    for msg in lifecycle_messages.read() {
-        match msg {
-            AppLifecycle::WillSuspend => {
-                *winit_settings = WinitSettings {
-                    unfocused_mode: bevy::winit::UpdateMode::Reactive {
-                        wait: Duration::from_secs(1),
-                        react_to_device_events: false,
-                        react_to_user_events: false,
-                        react_to_window_events: false,
-                    },
-                    ..WinitSettings::game()
-                };
-            }
-
-            AppLifecycle::WillResume => *winit_settings = WinitSettings::game(),
-
-            AppLifecycle::Idle | AppLifecycle::Running | AppLifecycle::Suspended => (),
-        }
-    }
-}
-```
 
 
 # Off topic, but interesting: OpenGL on Android:

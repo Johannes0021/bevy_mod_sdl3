@@ -1,3 +1,4 @@
+use crate::context::SdlContext;
 use bevy_ecs::{
     change_detection::{NonSend, ResMut},
     entity::Entity,
@@ -7,13 +8,10 @@ use bevy_ecs::{
 use bevy_log::{error_once, info};
 use bevy_math::{IVec2, UVec2};
 use bevy_window::{Monitor, MonitorSelection, PrimaryMonitor, VideoMode, VideoModeSelection};
-
 use sdl3::{
     VideoSubsystem as SdlVideoSubsystem,
     video::{Display as SdlDisplay, DisplayMode as SdlDisplayMode},
 };
-
-use crate::context::SdlContext;
 
 #[derive(Resource, Debug, Default)]
 pub struct SdlMonitors {

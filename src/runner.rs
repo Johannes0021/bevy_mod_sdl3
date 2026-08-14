@@ -1,17 +1,3 @@
-use std::{cell::RefCell, mem, num::NonZeroU8, thread, time::Instant};
-
-use bevy_app::{App, AppExit, PluginsState};
-use bevy_ecs::{
-    change_detection::Res,
-    entity::Entity,
-    system::{Query, SystemState},
-    world::FromWorld,
-};
-use bevy_log::error;
-use bevy_window::{Window, WindowDestroyed};
-
-use sdl3::event::Event as SdlEvent;
-
 #[cfg(target_os = "android")]
 use crate::android;
 use crate::{
@@ -20,6 +6,17 @@ use crate::{
     event::{RawSdlEvent, forward_bevy_window_events, handle_sdl_event},
     monitors::{SyncMonitorsParams, sync_monitors},
 };
+use bevy_app::{App, AppExit, PluginsState};
+use bevy_ecs::{
+    change_detection::Res,
+    entity::Entity,
+    system::{Query, SystemState},
+    world::FromWorld,
+};
+use bevy_log::error;
+use bevy_window::{AppLifecycle, Window, WindowDestroyed, WindowEvent};
+use sdl3::event::Event as SdlEvent;
+use std::{cell::RefCell, mem, num::NonZeroU8, thread, time::Instant};
 
 const EXIT_FAILURE: NonZeroU8 = NonZeroU8::new(1).unwrap();
 
@@ -56,10 +53,68 @@ where
 //==================================================================================================
 
 pub(crate) struct AppLoopState {
-    pub suspended: bool,
-    pub needs_to_create_sdl_windows: bool,
+    raw_sdl_events: Vec<RawSdlEvent>,
+    bevy_window_events: Vec<WindowEvent>,
     pub destroyed_windows: Vec<Entity>,
-    pub exit: bool,
+    lifecycle: AppLifecycle,
+    last_app_update_lifecycle: AppLifecycle,
+    pub needs_to_create_sdl_windows: bool,
+    exit: bool,
+}
+
+impl Default for AppLoopState {
+    fn default() -> Self {
+        Self {
+            raw_sdl_events: Vec::default(),
+            bevy_window_events: vec![WindowEvent::AppLifecycle(AppLifecycle::Idle)],
+            destroyed_windows: Default::default(),
+            lifecycle: AppLifecycle::Idle,
+            last_app_update_lifecycle: AppLifecycle::Idle,
+            needs_to_create_sdl_windows: true,
+            exit: false,
+        }
+    }
+}
+
+impl AppLoopState {
+    fn apply_lifecycle(app: &mut App, lifecycle: AppLifecycle) {
+        let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+        let this = &mut sdl_context.app_loop_state;
+
+        this.bevy_window_events
+            .push(WindowEvent::AppLifecycle(lifecycle));
+        this.lifecycle = lifecycle;
+
+        if this.last_app_update_lifecycle != this.lifecycle {
+            AppLoopState::force_update_app(app);
+        }
+    }
+
+    fn try_update_app(app: &mut App) {
+        let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+        let this = &mut sdl_context.app_loop_state;
+        if this.lifecycle.is_active() {
+            AppLoopState::force_update_app(app);
+        }
+    }
+
+    fn force_update_app(app: &mut App) {
+        let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+        let this = &mut sdl_context.app_loop_state;
+
+        this.last_app_update_lifecycle = this.lifecycle;
+
+        let raw_sdl_events = mem::take(&mut this.raw_sdl_events);
+        let bevy_window_events = mem::take(&mut this.bevy_window_events);
+
+        if !raw_sdl_events.is_empty() {
+            app.world_mut().write_message_batch(raw_sdl_events);
+        }
+
+        forward_bevy_window_events(app.world_mut(), bevy_window_events);
+
+        app.update();
+    }
 }
 
 pub(crate) fn app_loop(app: App) -> AppExit {
@@ -74,17 +129,6 @@ pub(crate) fn app_loop(app: App) -> AppExit {
         Err(error) => {
             error!("Application loop failed: {error}");
             AppExit::Error(EXIT_FAILURE)
-        }
-    }
-}
-
-impl Default for AppLoopState {
-    fn default() -> Self {
-        Self {
-            suspended: false,
-            needs_to_create_sdl_windows: true,
-            destroyed_windows: Default::default(),
-            exit: false,
         }
     }
 }
@@ -119,58 +163,60 @@ fn app_loop_impl() -> Result<(), String> {
             continue;
         }
 
+        with_app_mut(|app| {
+            let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
+            let app_loop_state = &mut sdl_context.app_loop_state;
+            if app_loop_state.lifecycle == AppLifecycle::Idle {
+                AppLoopState::apply_lifecycle(app, AppLifecycle::Running);
+            }
+        })?;
+
         if !did_init_monitor_sync {
             did_init_monitor_sync = true;
             with_app_mut(run_sync_monitors_system)?;
         }
 
         if !last_iter {
-            'sdl_event_pump_loop: for sdl_event in event_pump.poll_iter() {
-                let break_sdl_event_pump_loop = with_app_mut(|app| {
+            for sdl_event in event_pump.poll_iter() {
+                with_app_mut(|app| {
                     let mut bevy_window_events = Vec::new();
                     let RequestAppLoopExit(request_app_loop_exit) =
                         handle_sdl_event(app.world_mut(), &sdl_event, &mut bevy_window_events);
 
                     let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
-                    sdl_context.app_loop_state.exit |= request_app_loop_exit;
+                    let app_loop_state = &mut sdl_context.app_loop_state;
 
-                    app.world_mut().write_message(RawSdlEvent(sdl_event));
+                    app_loop_state.exit |= request_app_loop_exit;
 
-                    let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
-                    for window in sdl_context.app_loop_state.destroyed_windows.drain(..) {
+                    app_loop_state.raw_sdl_events.push(RawSdlEvent(sdl_event));
+
+                    for window in app_loop_state.destroyed_windows.drain(..) {
                         bevy_window_events.push(WindowDestroyed { window }.into());
                     }
-
-                    if !bevy_window_events.is_empty() {
-                        forward_bevy_window_events(app.world_mut(), bevy_window_events);
-                    }
-
-                    request_app_loop_exit
+                    app_loop_state.bevy_window_events.extend(bevy_window_events);
                 })?;
-
-                if break_sdl_event_pump_loop {
-                    break 'sdl_event_pump_loop;
-                }
             }
         }
-
-        with_app_mut(try_update_app)?;
-
-        with_app_mut(run_create_windows_system_if_needed)?;
-
-        if last_iter {
-            break 'app_loop;
-        }
-
-        last_iter |= with_app_mut(should_exit)?;
 
         if last_iter {
             with_app_mut(|app| {
                 if app.should_exit().is_none() {
                     app.world_mut().write_message(AppExit::Success);
                 }
+
+                AppLoopState::force_update_app(app)
             })?;
+
+            break 'app_loop;
         } else {
+            with_app_mut(AppLoopState::try_update_app)?;
+        }
+
+        with_app_mut(run_create_windows_system_if_needed)?;
+
+        last_iter |= with_app_mut(should_exit)?;
+
+        if !last_iter {
             with_app_mut(|app| apply_frame_pacing(app, frame_start))?;
         }
     }
@@ -213,32 +259,26 @@ fn run_create_windows_system_if_needed(app: &mut App) {
     }
 }
 
-fn try_update_app(app: &mut App) {
-    let sdl_context = app.world().non_send::<SdlContext>();
-    if !sdl_context.app_loop_state.suspended {
-        app.update();
-    }
-}
-
 fn should_exit(app: &mut App) -> bool {
     if app.should_exit().is_some() {
         return true;
     }
 
-    let sdl_context = app.world().non_send::<SdlContext>();
-    sdl_context.app_loop_state.exit
+    app.world().non_send::<SdlContext>().app_loop_state.exit
 }
 
 fn apply_frame_pacing(app: &mut App, frame_start: Instant) {
-    let sdl_context = app.world().non_send::<SdlContext>();
-    let suspended = sdl_context.app_loop_state.suspended;
+    let is_active = app
+        .world()
+        .non_send::<SdlContext>()
+        .app_loop_state
+        .lifecycle
+        .is_active();
 
     let mut focused_windows_state: SystemState<(Res<SdlSettings>, Query<&Window>)> =
         SystemState::new(app.world_mut());
     let (settings, windows) = focused_windows_state.get(app.world()).unwrap();
-    let frame_rate = if suspended {
-        settings.suspended
-    } else {
+    let frame_rate = if is_active {
         let focused = windows.iter().any(|window| window.focused);
 
         if focused {
@@ -246,6 +286,8 @@ fn apply_frame_pacing(app: &mut App, frame_start: Instant) {
         } else {
             settings.unfocused
         }
+    } else {
+        settings.suspended
     };
 
     match frame_rate {
@@ -280,8 +322,15 @@ fn event_watch(event: SdlEvent) {
             #[cfg(target_os = "android")]
             android::trigger_surface_destruction(app.world_mut());
 
-            let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
-            sdl_context.app_loop_state.suspended = true;
+            AppLoopState::apply_lifecycle(app, AppLifecycle::WillSuspend);
+        }),
+
+        SdlEvent::AppDidEnterBackground { timestamp: _ } => with_app_mut(|app| {
+            AppLoopState::apply_lifecycle(app, AppLifecycle::Suspended);
+        }),
+
+        SdlEvent::AppWillEnterForeground { timestamp: _ } => with_app_mut(|app| {
+            AppLoopState::apply_lifecycle(app, AppLifecycle::WillResume);
         }),
 
         SdlEvent::AppDidEnterForeground { timestamp: _ } => with_app_mut(|app| {
@@ -297,8 +346,7 @@ fn event_watch(event: SdlEvent) {
                 ensure_surface_exists_state.apply(app.world_mut());
             }
 
-            let mut sdl_context = app.world_mut().non_send_mut::<SdlContext>();
-            sdl_context.app_loop_state.suspended = false;
+            AppLoopState::apply_lifecycle(app, AppLifecycle::Running);
         }),
 
         _ => Ok(()),

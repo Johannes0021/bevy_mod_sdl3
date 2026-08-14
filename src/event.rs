@@ -1,7 +1,12 @@
-use std::path::PathBuf;
-
+use crate::{
+    context::SdlContext,
+    converters::{
+        keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl, touch_event_from_sdl,
+    },
+    monitors::{SyncMonitorsParams, sync_monitors},
+    runner::RequestAppLoopExit,
+};
 use approx::relative_eq;
-
 use bevy_ecs::{
     change_detection::NonSendMut,
     component::Component,
@@ -22,17 +27,8 @@ use bevy_window::{
     WindowBackendScaleFactorChanged, WindowCloseRequested, WindowEvent, WindowFocused, WindowMoved,
     WindowOccluded, WindowResized, WindowScaleFactorChanged,
 };
-
 use sdl3::event::{Event as SdlEvent, WindowEvent as SdlWindowEvent};
-
-use crate::{
-    context::SdlContext,
-    converters::{
-        keycode_from_sdl, mouse_button_from_sdl, scancode_from_sdl, touch_event_from_sdl,
-    },
-    monitors::{SyncMonitorsParams, sync_monitors},
-    runner::RequestAppLoopExit,
-};
+use std::path::PathBuf;
 
 //==================================================================================================
 // RawSdlEvent

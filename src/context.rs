@@ -1,3 +1,9 @@
+use crate::{
+    converters::theme_from_sdl,
+    monitors::{SdlDisplayModeExt, SdlMonitors},
+    runner::AppLoopState,
+    windows::{SdlWindowExt, SdlWindowWrapper, SdlWindows, WindowId},
+};
 use bevy_app::AppExit;
 use bevy_derive::{Deref, DerefMut};
 use bevy_ecs::{
@@ -15,17 +21,9 @@ use bevy_window::{
     WindowClosed, WindowClosing, WindowCreated, WindowEvent, WindowMode, WindowPosition,
     WindowResized, WindowScaleFactorChanged, WindowWrapper,
 };
-
 use sdl3::{
     EventSubsystem as SdlEventSubsystem, Sdl, VideoSubsystem as SdlVideoSubsystem,
     mouse::MouseUtil as SdlMouseUtil, video::WindowPos as SdlWindowPos,
-};
-
-use crate::{
-    converters::theme_from_sdl,
-    monitors::{SdlDisplayModeExt, SdlMonitors},
-    runner::AppLoopState,
-    windows::{SdlWindowExt, SdlWindowWrapper, SdlWindows, WindowId},
 };
 
 //==================================================================================================
