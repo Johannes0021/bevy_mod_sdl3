@@ -114,6 +114,8 @@ impl AppLoopState {
         forward_bevy_window_events(app.world_mut(), bevy_window_events);
 
         app.update();
+
+        run_create_windows_system_if_needed(app);
     }
 }
 
@@ -214,7 +216,6 @@ fn app_loop_impl() -> Result<(), String> {
 
         last_iter |= with_app_mut(should_exit)?;
         if !last_iter {
-            with_app_mut(run_create_windows_system_if_needed)?;
             with_app_mut(|app| apply_frame_pacing(app, frame_start))?;
         }
     }
