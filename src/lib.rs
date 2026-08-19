@@ -4,8 +4,6 @@
  *  - Do we need to release input when focus is lost?
  *  - Does sdl3 support SdlEvent::MouseWheel MouseScrollUnit::Pixel?
  *      - In bevy_winit/src/state.rs look at: WindowEvent::MouseWheel
- *  - I couldn't find SDL_EVENT_FINGER_CANCELED in sdl3-rs Event (TouchPhase::Canceled);
- *      - In bevy_winit/src/state.rs look at: WindowEvent::Touch
  *  - I couldn't find SDL_EVENT_SYSTEM_THEME_CHANGED in sdl3-rs Event (ThemeChanged);
  *      - In bevy_winit/src/state.rs look at: WindowEvent::ThemeChanged
  *  - In bevy_winit/src/state.rs look at:

@@ -417,6 +417,40 @@ pub(crate) fn handle_sdl_event(
             }
         }
 
+        SdlEvent::FingerCanceled {
+            timestamp: _,
+            touch_id: _,
+            finger_id,
+            x,
+            y,
+            dx: _,
+            dy: _,
+            pressure,
+            window_id,
+        } => {
+            let sdl_context = world.non_send::<SdlContext>();
+            if let Some((entity, logical_position)) = sdl_context
+                .get_window_entity((*window_id).into())
+                .and_then(|entity| {
+                    try_with_window(world, entity, |window| {
+                        let logical_position = window.size() * Vec2::new(*x, *y);
+                        (entity, logical_position)
+                    })
+                })
+            {
+                bevy_window_events.push(
+                    touch_event_from_sdl(
+                        TouchPhase::Canceled,
+                        *finger_id as i64,
+                        logical_position,
+                        *pressure,
+                        entity,
+                    )
+                    .into(),
+                );
+            }
+        }
+
         SdlEvent::DollarRecord { .. } => (), // TODO
 
         SdlEvent::MultiGesture { .. } => (), // TODO

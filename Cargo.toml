@@ -20,3 +20,9 @@ bevy = "0.19.1"
 
 [[example]]
 name = "hello_world"
+
+[patch.crates-io]
+sdl3 = {
+    git = "https://github.com/Johannes0021/sdl3-rs.git",
+    branch = "add-sdl-event-finger-canceled-patch-v0.18.4",
+}
