@@ -114,6 +114,51 @@ this, I use `Msaa::Off`.
 I also noticed that bevy uses less CPU when running without multi-threading on mobile devices. For
 this reason, I use single-threaded mode on mobile (the game is simple).
 
+On Android with the winit backend, the app was killed in the background because of CPU usage, I
+could fix it with:
+```rust
+app.insert_resource(WinitSettings::game())
+    .add_systems(Update, update_winit_settings_on_lifecycle);
+
+// ...
+
+fn update_winit_settings_on_lifecycle(
+    mut winit_settings: ResMut<WinitSettings>,
+    mut lifecycle_messages: MessageReader<AppLifecycle>,
+) {
+    for msg in lifecycle_messages.read() {
+        match msg {
+            AppLifecycle::Suspended => {
+                *winit_settings = WinitSettings {
+                    unfocused_mode: bevy::winit::UpdateMode::Reactive {
+                        wait: Duration::from_secs(1),
+                        react_to_device_events: false,
+                        react_to_user_events: false,
+                        react_to_window_events: false,
+                    },
+                    ..WinitSettings::game()
+                };
+            }
+
+            AppLifecycle::Running => *winit_settings = WinitSettings::game(),
+
+            AppLifecycle::Idle | AppLifecycle::WillSuspend | AppLifecycle::WillResume => (),
+        }
+    }
+}
+```
+
+On Android, I noticed that the delta time is very unstable and causes animations to stutter. If I
+force the delta time to 60 fps, the animations are smooth. I think there may be a problem with the
+delta time calculation, so I want to look into this further.
+```rust
+// This is a test not a fix
+app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+    std::time::Duration::from_secs_f64(1.0 / 60.0),
+));
+}
+```
+
 
 
 # Off topic, but interesting: OpenGL on Android:
