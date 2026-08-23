@@ -114,8 +114,9 @@ this, I use `Msaa::Off`.
 I also noticed that bevy uses less CPU when running without multi-threading on mobile devices. For
 this reason, I use single-threaded mode on mobile (the game is simple).
 
-On Android with the winit backend, the app was killed in the background because of CPU usage, I
-could fix it with:
+On Android with the winit backend, the app was killed in the background because of CPU usage. I had
+to disable the `audio` feature in bevy, because the audio thread was still using about 2% CPU in the
+background. After that, I could fix the remaining CPU usage with:
 ```rust
 app.insert_resource(WinitSettings::game())
     .add_systems(Update, update_winit_settings_on_lifecycle);
