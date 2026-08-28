@@ -2,8 +2,12 @@
 Currently tries to match bevy_winit up to commit:
 https://github.com/bevyengine/bevy/commit/5036d978a294a3fbb1c42bf005d6a255e2978a74
 
+
+
 # TODO's
 Search the codebase for `TODO`.
+
+
 
 # Motivation for this plugin
 I want to make a game for Android and iOS using the bevy game engine.
@@ -131,6 +135,7 @@ DefaultPlugins.set(WindowPlugin {
     ..default()
 })
 ```
+
 
 
 # Performance notes
