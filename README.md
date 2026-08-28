@@ -27,6 +27,15 @@ winit = { git = "https://github.com/Johannes0021/winit.git", branch = "android-d
 bevy_android = { git = "https://github.com/Johannes0021/bevy.git", branch = "mobile-patch-v0.19.1" }
 ```
 
+Disable `LogPlugin` for subsequent recreations in `DefaultPlugins`:
+```rust
+static FIRST_BUILD: AtomicBool = AtomicBool::new(true);
+
+if !FIRST_BUILD.swap(false, Ordering::Relaxed) {
+    plugins = plugins.disable::<LogPlugin>();
+}
+```
+
 ## winit issues on iOS
 - https://github.com/rust-windowing/winit/issues/4224
 - https://github.com/rust-windowing/winit/issues/4601
@@ -106,6 +115,24 @@ export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$ANDROID_NDK_ROOT/toolchains/l
 
 
 
+# Mobile `WindowPlugin` config
+```rust
+DefaultPlugins.set(WindowPlugin {
+    primary_window: Some(Window {
+        present_mode: PresentMode::AutoVsync, // Or PresentMode::Fifo
+
+        #[cfg(any(target_os = "android", target_os = "ios"))]
+        mode: bevy::window::WindowMode::BorderlessFullscreen(
+            bevy::window::MonitorSelection::Current,
+        ),
+
+        ..default()
+    }),
+    ..default()
+})
+```
+
+
 # Performance notes
 
 I noticed that MSAA uses a lot of GPU power on mobile devices, especially on Android. Because of
@@ -164,6 +191,27 @@ app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
 # Off topic, but interesting: OpenGL on Android:
 https://mevlyshkin.com/notes/bevy-android-setup/
 
+I had to change the setup from the article to use `Material2d`:
+```toml
+[target.'cfg(target_os = "android")'.dependencies] # Or enable it for all
+bevy_render = { version = "0.19.1", features = ["gles"] }
+```
+
+```rust
+DefaultPlugins.set(RenderPlugin {
+    render_creation: RenderCreation::Automatic(Box::new(WgpuSettings {
+        priority: WgpuSettingsPriority::WebGL2,
+        limits: WgpuLimits::downlevel_webgl2_defaults()
+            .using_resolution(WgpuLimits::default()),
+
+        #[cfg(target_os = "android")]
+        backends: Some(bevy::render::settings::Backends::GL),
+
+        ..default()
+    })),
+    ..default()
+})
+```
 
 
 # Example
