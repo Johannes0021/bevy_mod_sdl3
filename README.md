@@ -183,40 +183,9 @@ fn update_winit_settings_on_lifecycle(
 
 On Android, I noticed that the delta time is very unstable and causes animations to stutter. If I
 force the delta time to 60 fps, the animations are smooth. I think there may be a problem with the
-delta time calculation, so I want to look into this further.
-```rust
-// This is a test not a fix
-app.insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
-    std::time::Duration::from_secs_f64(1.0 / 60.0),
-));
-```
+delta time calculation. I wrote a small plugin that tries to work around this problem by smoothing
+the delta time. It is still a wip: https://github.com/Johannes0021/bevy_mod_time_smoothing.git
 
-
-
-# Off topic, but interesting: OpenGL on Android:
-https://mevlyshkin.com/notes/bevy-android-setup/
-
-I had to change the setup from the article to use `Material2d`:
-```toml
-[target.'cfg(target_os = "android")'.dependencies] # Or enable it for all
-bevy_render = { version = "0.19.1", features = ["gles"] }
-```
-
-```rust
-DefaultPlugins.set(RenderPlugin {
-    render_creation: RenderCreation::Automatic(Box::new(WgpuSettings {
-        priority: WgpuSettingsPriority::WebGL2,
-        limits: WgpuLimits::downlevel_webgl2_defaults()
-            .using_resolution(WgpuLimits::default()),
-
-        #[cfg(target_os = "android")]
-        backends: Some(bevy::render::settings::Backends::GL),
-
-        ..default()
-    })),
-    ..default()
-})
-```
 
 
 # Example
