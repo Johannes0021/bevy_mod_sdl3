@@ -297,23 +297,23 @@ pub(crate) fn handle_sdl_event(
 
         SdlEvent::JoyDeviceRemoved { .. } => (), // TODO
 
-        SdlEvent::ControllerAxisMotion { .. } => (), // TODO
+        SdlEvent::GamepadAxisMotion { .. } => (), // TODO
 
-        SdlEvent::ControllerButtonDown { .. } => (), // TODO
+        SdlEvent::GamepadButtonDown { .. } => (), // TODO
 
-        SdlEvent::ControllerButtonUp { .. } => (), // TODO
+        SdlEvent::GamepadButtonUp { .. } => (), // TODO
 
-        SdlEvent::ControllerDeviceAdded { .. } => (), // TODO
+        SdlEvent::GamepadAdded { .. } => (), // TODO
 
-        SdlEvent::ControllerDeviceRemoved { .. } => (), // TODO
+        SdlEvent::GamepadRemoved { .. } => (), // TODO
 
-        SdlEvent::ControllerDeviceRemapped { .. } => (), // TODO
+        SdlEvent::GamepadRemapped { .. } => (), // TODO
 
-        SdlEvent::ControllerTouchpadDown { .. } => (), // TODO
+        SdlEvent::GamepadTouchpadDown { .. } => (), // TODO
 
-        SdlEvent::ControllerTouchpadMotion { .. } => (), // TODO
+        SdlEvent::GamepadTouchpadMotion { .. } => (), // TODO
 
-        SdlEvent::ControllerTouchpadUp { .. } => (), // TODO
+        SdlEvent::GamepadTouchpadUp { .. } => (), // TODO
 
         SdlEvent::FingerDown {
             timestamp: _,
