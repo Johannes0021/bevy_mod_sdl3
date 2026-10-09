@@ -15,6 +15,7 @@
  *          - WindowEvent::Ime
  * - Impl bevy_winit/src/cursor/mod.rs
  * - Impl bevy_winit/src/accessibility.rs
+ * - Impl bevy_winit/src/game_mode.rs
  */
 pub use config::*;
 pub use context::*;
@@ -24,7 +25,7 @@ pub use windows::*;
 
 pub use sdl3;
 
-use bevy_app::{App, First, Last, Plugin};
+use bevy_app::{App, First, Last, OnAppExitSystems, Plugin};
 use bevy_ecs::{
     change_detection::NonSendMut, lifecycle::Add, observer::On, schedule::IntoScheduleConfigs,
 };
@@ -55,7 +56,7 @@ impl Plugin for Sdl3Plugin {
                 (
                     changed_windows,
                     changed_cursor_options,
-                    destroy_windows.after(ExitSystems), /* TODO: .after(OnAppExitSystems), */
+                    destroy_windows.after(ExitSystems).after(OnAppExitSystems),
                 )
                     .chain(),
             )
