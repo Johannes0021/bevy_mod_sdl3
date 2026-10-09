@@ -7,7 +7,9 @@ use bevy_ecs::{
 };
 use bevy_log::{error_once, info};
 use bevy_math::{IVec2, UVec2};
-use bevy_window::{Monitor, MonitorSelection, PrimaryMonitor, VideoMode, VideoModeSelection};
+use bevy_window::{
+    HasWindows, Monitor, MonitorSelection, PrimaryMonitor, VideoMode, VideoModeSelection,
+};
 use sdl3::{
     VideoSubsystem as SdlVideoSubsystem,
     video::{Display as SdlDisplay, DisplayMode as SdlDisplayMode},
@@ -142,7 +144,14 @@ pub(crate) fn sync_monitors(
             true
         } else {
             info!("Monitor removed {}", entity);
-            commands.entity(*entity).despawn();
+
+            commands
+                .entity(*entity)
+                // Remove the monitor's linked windows before despawning it to prevent those windows
+                // from being despawned too.
+                .remove::<HasWindows>()
+                .despawn();
+
             idx += 1;
             false
         }
