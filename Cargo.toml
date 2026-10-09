@@ -5,18 +5,18 @@ edition = "2024"
 
 [dependencies]
 approx = { version = "0.5.1", default-features = false }
-bevy_app = "0.19.1"
-bevy_derive = "0.19.1"
-bevy_ecs = "0.19.1"
-bevy_input = "0.19.1"
-bevy_log = "0.19.1"
-bevy_math = "0.19.1"
-bevy_window = "0.19.1"
+bevy_app = "0.20.0"
+bevy_derive = "0.20.0"
+bevy_ecs = "0.20.0"
+bevy_input = "0.20.0"
+bevy_log = "0.20.0"
+bevy_math = "0.20.0"
+bevy_window = "0.20.0"
 sdl3 = { version = "0.20.0", features = ["raw-window-handle"] }
 raw-window-handle = "0.6.2"
 
 [dev-dependencies]
-bevy = "0.19.1"
+bevy = "0.20.0"
 
 [[example]]
 name = "hello_world"

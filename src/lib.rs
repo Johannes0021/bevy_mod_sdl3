@@ -60,7 +60,7 @@ impl Plugin for Sdl3Plugin {
                     .chain(),
             )
             .add_observer(
-                |_window: On<Add, Window>, mut sdl_context: NonSendMut<SdlContext>| {
+                |_window: On<Add<Window>>, mut sdl_context: NonSendMut<SdlContext>| {
                     sdl_context.app_loop_state.needs_to_create_sdl_windows = true;
                 },
             );
