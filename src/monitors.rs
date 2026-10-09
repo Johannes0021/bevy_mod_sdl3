@@ -3,7 +3,7 @@ use bevy_ecs::{
     change_detection::{NonSend, ResMut},
     entity::Entity,
     resource::Resource,
-    system::{Commands, Query, SystemParamItem},
+    system::{Commands, Query, SystemParam},
 };
 use bevy_log::{error_once, info};
 use bevy_math::{IVec2, UVec2};
@@ -51,17 +51,21 @@ pub fn get_refresh_rate_millihertz(mode: &SdlDisplayMode) -> Option<u32> {
     }
 }
 
-pub(crate) type SyncMonitorsParams<'w, 's> = (
-    Commands<'w, 's>,
-    NonSend<'w, SdlContext>,
-    ResMut<'w, SdlMonitors>,
-    Query<'w, 's, (Entity, &'static PrimaryMonitor)>,
-);
+#[derive(SystemParam)]
+pub(crate) struct SyncMonitorsParams<'w, 's> {
+    commands: Commands<'w, 's>,
+    sdl_context: NonSend<'w, SdlContext>,
+    sdl_monitors: ResMut<'w, SdlMonitors>,
+    old_primary_monitors: Query<'w, 's, (Entity, &'static PrimaryMonitor)>,
+}
 
 pub(crate) fn sync_monitors(
-    (mut commands, sdl_context, mut sdl_monitors, old_primary_monitors): SystemParamItem<
-        SyncMonitorsParams,
-    >,
+    SyncMonitorsParams {
+        mut commands,
+        sdl_context,
+        mut sdl_monitors,
+        old_primary_monitors,
+    }: SyncMonitorsParams,
 ) {
     let primary_display = sdl_context.video.get_primary_display();
     let mut seen_displays = vec![false; sdl_monitors.displays.len()];

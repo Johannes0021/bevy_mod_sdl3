@@ -13,7 +13,7 @@ use bevy_ecs::{
     lifecycle::RemovedComponents,
     message::{MessageReader, MessageWriter},
     query::{Added, Changed, With},
-    system::{Commands, Local, Query, SystemParamItem},
+    system::{Commands, Local, Query, SystemParam},
 };
 use bevy_log::{error, info};
 use bevy_window::{
@@ -123,12 +123,13 @@ pub(crate) struct CachedCursorOptions(CursorOptions);
 // Systems
 //==================================================================================================
 
-pub(crate) type CreateWindowParams<'w, 's> = (
-    Commands<'w, 's>,
-    NonSendMut<'w, SdlContext>,
-    Res<'w, SdlMonitors>,
-    MessageWriter<'w, WindowCreated>,
-    Query<
+#[derive(SystemParam)]
+pub(crate) struct CreateWindowParams<'w, 's> {
+    commands: Commands<'w, 's>,
+    sdl_context: NonSendMut<'w, SdlContext>,
+    sdl_monitors: Res<'w, SdlMonitors>,
+    window_created_events: MessageWriter<'w, WindowCreated>,
+    created_windows: Query<
         'w,
         's,
         (
@@ -139,16 +140,16 @@ pub(crate) type CreateWindowParams<'w, 's> = (
         ),
         Added<Window>,
     >,
-);
+}
 
 pub(crate) fn create_windows(
-    (
+    CreateWindowParams {
         mut commands,
         mut sdl_context,
         sdl_monitors,
         mut window_created_events,
         created_windows,
-    ): SystemParamItem<CreateWindowParams>,
+    }: CreateWindowParams,
 ) {
     for (entity, mut window, cursor_options, handle_holder) in created_windows {
         if sdl_context.get_window(entity).is_some() {

@@ -3,7 +3,7 @@ use bevy_ecs::{
     change_detection::NonSend,
     entity::Entity,
     query::{With, Without},
-    system::{Commands, Single, SystemParamItem},
+    system::{Commands, Single, SystemParam},
     world::World,
 };
 use bevy_window::{PrimaryWindow, RawHandleWrapper, RawHandleWrapperHolder};
@@ -20,19 +20,25 @@ pub(crate) fn trigger_surface_destruction(world: &mut World) {
     }
 }
 
-pub(crate) type EnsureSurfaceExistsParams<'w, 's> = (
-    Commands<'w, 's>,
-    NonSend<'w, SdlContext>,
-    Single<
+#[allow(clippy::type_complexity)]
+#[derive(SystemParam)]
+pub(crate) struct EnsureSurfaceExistsParams<'w, 's> {
+    commands: Commands<'w, 's>,
+    sdl_context: NonSend<'w, SdlContext>,
+    window: Single<
         'w,
         's,
         (Entity, Option<&'static RawHandleWrapperHolder>),
         (With<CachedWindow>, Without<RawHandleWrapper>),
     >,
-);
+}
 
 pub(crate) fn ensure_surface_exists(
-    (mut commands, sdl_context, window): SystemParamItem<EnsureSurfaceExistsParams>,
+    EnsureSurfaceExistsParams {
+        mut commands,
+        sdl_context,
+        window,
+    }: EnsureSurfaceExistsParams,
 ) {
     // Get windows that are cached but without raw handles.
     // Those window were already created, but got their handle wrapper removed when the app was

@@ -8,11 +8,11 @@ use crate::{
 };
 use approx::relative_eq;
 use bevy_ecs::{
-    change_detection::NonSendMut,
+    change_detection::NonSend,
     component::Component,
     entity::Entity,
     message::Message,
-    system::{Query, SystemParamItem, SystemState},
+    system::{Query, SystemParam, SystemState},
     world::{FromWorld, World},
 };
 use bevy_input::{
@@ -849,13 +849,17 @@ fn is_real_mouse(mouse_id: u32) -> bool {
     mouse_id != sdl3::sys::touch::SDL_TOUCH_MOUSEID && mouse_id != sdl3::sys::pen::SDL_PEN_MOUSEID
 }
 
-pub(crate) type SyncWindowScaleFactorsParams<'w, 's> = (
-    NonSendMut<'w, SdlContext>,
-    Query<'w, 's, (Entity, &'static mut Window)>,
-);
+#[derive(SystemParam)]
+pub(crate) struct SyncWindowScaleFactorsParams<'w, 's> {
+    sdl_context: NonSend<'w, SdlContext>,
+    windows: Query<'w, 's, (Entity, &'static mut Window)>,
+}
 
 pub(crate) fn sync_window_scale_factors(
-    (sdl_context, windows): SystemParamItem<SyncWindowScaleFactorsParams>,
+    SyncWindowScaleFactorsParams {
+        sdl_context,
+        windows,
+    }: SyncWindowScaleFactorsParams,
     bevy_window_events: &mut Vec<WindowEvent>,
 ) {
     for (window_entity, mut window) in windows {
