@@ -5,18 +5,18 @@ edition = "2024"
 
 [dependencies]
 approx = { version = "0.5.1", default-features = false }
-bevy_app = "0.20.0"
-bevy_derive = "0.20.0"
-bevy_ecs = "0.20.0"
-bevy_input = "0.20.0"
-bevy_log = "0.20.0"
-bevy_math = "0.20.0"
-bevy_window = "0.20.0"
-sdl3 = { version = "0.20.0", features = ["raw-window-handle"] }
-raw-window-handle = "0.6.2"
+bevy_app = { version = "0.20.0", default-features = false }
+bevy_derive = { version = "0.20.0", default-features = false }
+bevy_ecs = { version = "0.20.0", default-features = false }
+bevy_input = { version = "0.20.0", default-features = false }
+bevy_log = { version = "0.20.0", default-features = false }
+bevy_math = { version = "0.20.0", default-features = false, features = ["std"] }
+bevy_window = { version = "0.20.0", default-features = false, features = ["std"] }
+sdl3 = { version = "0.20.0", default-features = false, features = ["raw-window-handle"] }
+raw-window-handle = { version = "0.6.2", default-features = false }
 
 [dev-dependencies]
-bevy = "0.20.0"
+bevy = { version = "0.20.0", default-features = false, features = ["2d"] }
 
 [[example]]
 name = "hello_world"
