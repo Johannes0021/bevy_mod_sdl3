@@ -144,7 +144,20 @@ I noticed that MSAA uses a lot of GPU power on mobile devices, especially on And
 this, I use `Msaa::Off`.
 
 I also noticed that bevy uses less CPU when running without multi-threading on mobile devices. For
-this reason, I use single-threaded mode on mobile (the game is simple).
+this reason, I use single-threaded mode (Disabled the `multi_threaded` feature in bevy).
+
+This greatly improves GPU performance on all my Android phones (Uses just a little more CPU):
+```rust
+DefaultPlugins.set(RenderPlugin {
+    render_creation: RenderCreation::Automatic(Box::new(WgpuSettings {
+        priority: WgpuSettingsPriority::WebGL2,
+        limits: WgpuLimits::downlevel_webgl2_defaults()
+            .using_resolution(WgpuLimits::default()),
+        ..default()
+    })),
+    ..default()
+})
+```
 
 On Android with the winit backend, the app was killed in the background because of CPU usage. I had
 to disable the `audio` feature in bevy, because the audio thread was still using about 2% CPU in the
