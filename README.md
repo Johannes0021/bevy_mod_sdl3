@@ -15,34 +15,14 @@ I ran into issues with winit on both platforms, and on iOS I was unable to resol
 them. For now, my plan is to use this plugin on iOS and the default winit plugin on PC and Android.
 
 ## winit issues on Android
-- https://github.com/rust-windowing/winit/issues/3325
-    - There is a patch for this issue that I use:
-      https://github.com/rib/winit/commit/c28e425214e82bdb86dcdf89c9488554a18e24b2
-- https://github.com/bevyengine/bevy/issues/16798
-    and https://github.com/rust-mobile/android-activity/issues/175
-    - Workaround patch:
-      https://github.com/Johannes0021/android-activity/commit/d31a501a252a2dbb359bd7b4673128017aab7746
-
-Add this to your Cargo.toml to fix the android issues for bevy `v0.20.0`:
-```toml
-[patch.crates-io]
-android-activity = { git = "https://github.com/Johannes0021/android-activity.git", branch = "game-activity-patch-v0.6.1" }
-winit = { git = "https://github.com/Johannes0021/winit.git", branch = "android-destroy-recreate-v0.30.13" }
-bevy_android = { git = "https://github.com/Johannes0021/bevy.git", branch = "android-patch-v0.20.0" }
-```
-
-Disable `LogPlugin` for subsequent recreations in `DefaultPlugins`:
-```rust
-static FIRST_BUILD: AtomicBool = AtomicBool::new(true);
-
-if !FIRST_BUILD.swap(false, Ordering::Relaxed) {
-    plugins = plugins.disable::<LogPlugin>();
-}
-```
+https://github.com/bevyengine/bevy/issues/26282
 
 ## winit issues on iOS
 - https://github.com/rust-windowing/winit/issues/4224
 - https://github.com/rust-windowing/winit/issues/4601
+
+iOS might also have some of the performance issues from Android:
+https://github.com/bevyengine/bevy/issues/26282
 
 
 
@@ -135,69 +115,6 @@ DefaultPlugins.set(WindowPlugin {
     ..default()
 })
 ```
-
-
-
-# Performance notes
-
-I noticed that MSAA uses a lot of GPU power on mobile devices, especially on Android. Because of
-this, I use `Msaa::Off`.
-
-I also noticed that bevy uses less CPU when running without multi-threading on mobile devices. For
-this reason, I use single-threaded mode (Disabled the `multi_threaded` feature in bevy).
-
-This greatly improves GPU performance on all my Android phones (Uses just a little more CPU):
-```rust
-DefaultPlugins.set(RenderPlugin {
-    render_creation: RenderCreation::Automatic(Box::new(WgpuSettings {
-        priority: WgpuSettingsPriority::WebGL2,
-        limits: WgpuLimits::downlevel_webgl2_defaults()
-            .using_resolution(WgpuLimits::default()),
-        ..default()
-    })),
-    ..default()
-})
-```
-
-On Android with the winit backend, the app was killed in the background because of CPU usage. I had
-to disable the `audio` feature in bevy, because the audio thread was still using about 2% CPU in the
-background. After that, I could fix the remaining CPU usage with:
-```rust
-app.insert_resource(WinitSettings::game())
-    .add_systems(Update, update_winit_settings_on_lifecycle);
-
-// ...
-
-fn update_winit_settings_on_lifecycle(
-    mut winit_settings: ResMut<WinitSettings>,
-    mut lifecycle_messages: MessageReader<AppLifecycle>,
-) {
-    for msg in lifecycle_messages.read() {
-        match msg {
-            AppLifecycle::Suspended => {
-                *winit_settings = WinitSettings {
-                    unfocused_mode: bevy::winit::UpdateMode::Reactive {
-                        wait: Duration::from_secs(1),
-                        react_to_device_events: false,
-                        react_to_user_events: false,
-                        react_to_window_events: false,
-                    },
-                    ..WinitSettings::game()
-                };
-            }
-
-            AppLifecycle::Running => *winit_settings = WinitSettings::game(),
-
-            AppLifecycle::Idle | AppLifecycle::WillSuspend | AppLifecycle::WillResume => (),
-        }
-    }
-}
-```
-
-On Android, I noticed that the delta time is very unstable and causes animations to stutter. If I
-force the delta time to 60 fps, the animations are smooth. I think there may be a problem with the
-delta time calculation. I wrote a small plugin that tries to work around this problem by smoothing
-the delta time. It is still a wip: https://github.com/Johannes0021/bevy_mod_time_smoothing.git
 
 
 
