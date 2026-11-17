@@ -17,6 +17,7 @@ use bevy_ecs::{
 };
 use bevy_input::{
     ButtonState,
+    gestures::PinchGesture,
     keyboard::KeyboardInput,
     mouse::{MouseButtonInput, MouseMotion, MouseScrollUnit, MouseWheel},
     touch::TouchPhase,
@@ -451,9 +452,11 @@ pub(crate) fn handle_sdl_event(
             }
         }
 
-        SdlEvent::DollarRecord { .. } => (), // TODO
+        SdlEvent::PinchBegin { scale, .. } => bevy_window_events.push(PinchGesture(*scale).into()),
 
-        SdlEvent::MultiGesture { .. } => (), // TODO
+        SdlEvent::PinchUpdate { scale, .. } => bevy_window_events.push(PinchGesture(*scale).into()),
+
+        SdlEvent::PinchEnd { scale, .. } => bevy_window_events.push(PinchGesture(*scale).into()),
 
         SdlEvent::ClipboardUpdate { timestamp: _ } => (),
 
@@ -719,6 +722,10 @@ pub(crate) fn handle_sdl_window_event(
         SdlWindowEvent::ICCProfChanged => (),
 
         SdlWindowEvent::DisplayChanged(_) => (),
+
+        SdlWindowEvent::EnterFullscreen => (), // TODO?
+
+        SdlWindowEvent::LeaveFullscreen => (), // TODO?
     }
 
     // Just to make this sure...

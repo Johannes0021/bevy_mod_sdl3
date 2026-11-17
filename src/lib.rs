@@ -8,7 +8,6 @@
  *      - In bevy_winit/src/state.rs look at: WindowEvent::ThemeChanged
  *  - In bevy_winit/src/state.rs look at:
  *      - fn window_event
- *          - PinchGesture
  *          - RotationGesture
  *          - DoubleTapGesture
  *          - PanGesture
